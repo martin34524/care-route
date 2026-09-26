@@ -40,5 +40,8 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
+# Staff pages are protected in tests; ConnCase adds these credentials by default.
+config :care_route, :staff_auth, username: "staff", password: "test-password"
+
 # Jobs are only enqueued in tests; run them with Oban.Testing helpers
 config :care_route, Oban, testing: :manual

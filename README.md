@@ -9,6 +9,9 @@ description into a next step (self-care, clinic, or urgent care) and a clinician
     set -a; . ./.env; set +a         # loads GEMINI_API_KEY (gitignored)
     mix phx.server
 
+`/clinician` and `/admin` use basic auth from `STAFF_USERNAME` / `STAFF_PASSWORD`
+(required in production; if unset in dev they're open). Put them in `.env`.
+
 AI provider is picked by which key is set: `GEMINI_API_KEY`, then `ANTHROPIC_API_KEY`,
 else an offline stub. Tests always use the stub.
 

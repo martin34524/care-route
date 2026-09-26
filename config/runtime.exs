@@ -20,6 +20,21 @@ import Config
 if config_env() != :test do
   config :care_route, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")
   config :care_route, :gemini_api_key, System.get_env("GEMINI_API_KEY")
+
+  # Basic auth for /clinician and /admin. Required in production; optional in dev.
+  staff_user = System.get_env("STAFF_USERNAME")
+  staff_pass = System.get_env("STAFF_PASSWORD")
+
+  cond do
+    staff_user not in [nil, ""] and staff_pass not in [nil, ""] ->
+      config :care_route, :staff_auth, username: staff_user, password: staff_pass
+
+    config_env() == :prod ->
+      raise "STAFF_USERNAME and STAFF_PASSWORD must be set to protect /clinician and /admin"
+
+    true ->
+      :ok
+  end
 end
 
 if System.get_env("PHX_SERVER") do

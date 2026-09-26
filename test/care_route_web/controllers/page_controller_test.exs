@@ -13,6 +13,21 @@ defmodule CareRouteWeb.PageControllerTest do
     assert html =~ ~s(href="/clinician")
   end
 
+  test "clinician and admin pages require the staff login" do
+    for path <- ["/clinician", "/clinician/referrals/1", "/admin"] do
+      conn = get(build_conn(), path)
+      assert conn.status == 401, path
+
+      wrong = Plug.BasicAuth.encode_basic_auth("staff", "wrong")
+      conn = build_conn() |> put_req_header("authorization", wrong) |> get(path)
+      assert conn.status == 401, path
+    end
+
+    # Patient pages stay public.
+    assert build_conn() |> get(~p"/") |> html_response(200)
+    assert build_conn() |> get(~p"/start") |> html_response(200)
+  end
+
   test "Start now opens the intake start screen", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/start")
     assert html =~ "Not sure where to go for care?"

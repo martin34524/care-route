@@ -33,6 +33,12 @@ defmodule CareRouteWeb.ConnCase do
 
   setup tags do
     CareRoute.DataCase.setup_sandbox(tags)
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+    {:ok, conn: staff_conn(Phoenix.ConnTest.build_conn())}
+  end
+
+  @doc "Adds the test staff credentials, so /clinician and /admin are reachable."
+  def staff_conn(conn) do
+    %{username: user, password: pass} = Map.new(Application.fetch_env!(:care_route, :staff_auth))
+    Plug.Conn.put_req_header(conn, "authorization", Plug.BasicAuth.encode_basic_auth(user, pass))
   end
 end

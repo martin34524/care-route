@@ -14,19 +14,42 @@ defmodule CareRouteWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Clinician and admin pages. Basic auth when credentials are configured
+  # (always in production; see config/runtime.exs).
+  pipeline :staff do
+    plug :staff_auth
+  end
+
   scope "/", CareRouteWeb do
     pipe_through :browser
 
     get "/", PageController, :home
 
-    live "/start", PatientLive.Start
-    live "/intake/:token", PatientLive.Intake
-    live "/intake/:token/results", PatientLive.Results
+    live_session :patient do
+      live "/start", PatientLive.Start
+      live "/intake/:token", PatientLive.Intake
+      live "/intake/:token/results", PatientLive.Results
+    end
+  end
 
-    live "/clinician", ClinicianLive.Dashboard, :index
-    live "/clinician/referrals/:id", ClinicianLive.Dashboard, :show
+  # A separate live_session means arriving here from a patient page is a full
+  # page load, so the auth plug always runs.
+  scope "/", CareRouteWeb do
+    pipe_through [:browser, :staff]
 
-    live "/admin", AdminLive.Dashboard
+    live_session :staff do
+      live "/clinician", ClinicianLive.Dashboard, :index
+      live "/clinician/referrals/:id", ClinicianLive.Dashboard, :show
+
+      live "/admin", AdminLive.Dashboard
+    end
+  end
+
+  defp staff_auth(conn, _opts) do
+    case Application.get_env(:care_route, :staff_auth) do
+      nil -> conn
+      credentials -> Plug.BasicAuth.basic_auth(conn, credentials)
+    end
   end
 
   # Other scopes may use custom stacks.
