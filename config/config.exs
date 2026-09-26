@@ -15,9 +15,16 @@ config :care_route,
 config :care_route, Oban,
   engine: Oban.Engines.Basic,
   repo: CareRoute.Repo,
-  queues: [ai: 10],
-  # Delete finished jobs after 7 days so the jobs table doesn't grow forever.
-  plugins: [{Oban.Plugins.Pruner, max_age: 7 * 24 * 60 * 60}]
+  queues: [ai: 10, default: 2],
+  plugins: [
+    # Delete finished jobs after 7 days so the jobs table doesn't grow forever.
+    {Oban.Plugins.Pruner, max_age: 7 * 24 * 60 * 60},
+    # Delete patient data past the retention period, daily at 03:00 UTC.
+    {Oban.Plugins.Cron, crontab: [{"0 3 * * *", CareRoute.Workers.RetentionWorker}]}
+  ]
+
+# How long patient data (conversations, referrals) is kept.
+config :care_route, :retention_days, 30
 
 # Anthropic API (key is read at runtime in config/runtime.exs)
 config :care_route, :anthropic,
