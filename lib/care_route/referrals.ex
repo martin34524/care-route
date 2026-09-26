@@ -69,6 +69,16 @@ defmodule CareRoute.Referrals do
     end
   end
 
+  @doc "Clears a failed AI summary and queues a new attempt."
+  def retry_summary(%Referral{ai_summary: nil} = referral) do
+    with {:ok, referral} <- update_referral(referral, %{summary_failed_at: nil}),
+         {:ok, _job} <- Oban.insert(HandoffWorker.new(%{referral_id: referral.id})) do
+      {:ok, referral}
+    end
+  end
+
+  def retry_summary(%Referral{}), do: {:error, :already_summarized}
+
   @doc "Sends a referral to a different facility; it goes back to pending there."
   def reassign_referral(%Referral{} = referral, facility_id) do
     update_referral(referral, %{to_facility_id: facility_id, status: :pending})

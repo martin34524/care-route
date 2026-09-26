@@ -73,6 +73,13 @@ defmodule CareRoute.AI.HandoffPrompt do
     [%{role: "user", content: content}]
   end
 
+  @doc "Checks the AI note has the fields the summary needs."
+  def validate(%{"chief_complaint" => cc, "history" => history})
+      when is_binary(cc) and cc != "" and is_binary(history) and history != "",
+      do: :ok
+
+  def validate(_note), do: {:error, :invalid_ai_reply}
+
   @doc "Renders the structured note as the plain text stored in `referrals.ai_summary`."
   def format(note) do
     red_flags =

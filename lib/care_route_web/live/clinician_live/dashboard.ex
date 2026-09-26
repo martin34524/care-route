@@ -91,6 +91,13 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
     {:noreply, socket}
   end
 
+  def handle_event("retry-summary", _params, socket) do
+    case Referrals.retry_summary(socket.assigns.selected) do
+      {:ok, referral} -> {:noreply, assign(socket, selected: referral)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
   def handle_event("reassign", %{"facility_id" => facility_id}, socket) do
     %{selected: selected} = socket.assigns
 
@@ -542,9 +549,28 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
         id="ai-summary"
         class="whitespace-pre-wrap font-plex text-[12.5px] leading-[1.6] text-ink rounded-xl bg-paper px-3.5 py-3 mb-[18px]"
       >{@referral.ai_summary}</pre>
-      <p :if={!@referral.ai_summary} class="text-[12.5px] text-[#8B958F] mb-[18px]">
+      <p
+        :if={!@referral.ai_summary && !@referral.summary_failed_at}
+        class="text-[12.5px] text-[#8B958F] mb-[18px]"
+      >
         <span class="loading loading-spinner loading-xs"></span> Generating summary…
       </p>
+      <div
+        :if={!@referral.ai_summary && @referral.summary_failed_at}
+        id="summary-failed"
+        class="flex items-center justify-between gap-3 rounded-xl bg-[#FBF3EA] border border-[#F0DCC3] px-3.5 py-3 mb-[18px]"
+      >
+        <span class="text-[12.5px] text-[#6B4E1C]">
+          Summary unavailable — the AI couldn't be reached. The intake below is complete.
+        </span>
+        <button
+          id="retry-summary"
+          phx-click="retry-summary"
+          class="shrink-0 text-[12.5px] font-semibold text-[#333E37] border border-line bg-white hover:bg-paper px-3 py-1.5 rounded-lg"
+        >
+          Retry summary
+        </button>
+      </div>
 
       <div :if={qa_pairs(@referral) != []}>
         <.section_label>Adaptive intake transcript</.section_label>
