@@ -54,7 +54,10 @@ defmodule CareRoute.AI.Gemini do
         parse_response(resp_body)
 
       {:ok, %Req.Response{status: status, body: resp_body}} ->
-        Logger.error("Gemini API error #{status} (#{model}): #{inspect(resp_body)}")
+        Logger.error(
+          "Gemini API error #{status} (#{model}): #{CareRoute.AI.error_summary(resp_body)}"
+        )
+
         {:error, {:http_error, status}}
 
       {:error, exception} ->

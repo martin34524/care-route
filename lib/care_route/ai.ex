@@ -9,6 +9,18 @@ defmodule CareRoute.AI do
 
   alias CareRoute.AI.{Claude, Gemini}
 
+  @doc """
+  A short, log-safe description of a provider error response: the error type
+  and a truncated message, never the full body (which can echo request data).
+  """
+  def error_summary(%{"error" => %{} = error}) do
+    type = error["status"] || error["type"] || error["code"]
+    message = error["message"] |> to_string() |> String.slice(0, 160)
+    String.trim("#{type} #{message}")
+  end
+
+  def error_summary(_body), do: "unexpected response"
+
   def provider do
     cond do
       Gemini.configured?() -> :gemini

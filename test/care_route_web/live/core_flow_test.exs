@@ -181,6 +181,16 @@ defmodule CareRouteWeb.CoreFlowTest do
     assert {:ok, _view, _} = live(conn, ~p"/intake/#{conversation.token}")
   end
 
+  test "a referral that can't be saved queues no summary job", %{conversation: conversation} do
+    assert {:error, %Ecto.Changeset{}} =
+             Referrals.create_referral(%{
+               patient_id: conversation.patient_id,
+               to_facility_id: nil
+             })
+
+    refute_enqueued(worker: HandoffWorker)
+  end
+
   test "results page sends unfinished intakes back to the chat", %{
     conn: conn,
     conversation: conversation

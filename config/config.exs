@@ -11,11 +11,13 @@ config :care_route,
   ecto_repos: [CareRoute.Repo],
   generators: [timestamp_type: :utc_datetime]
 
-# Oban runs Claude API calls as background jobs
+# Oban runs the AI calls as background jobs
 config :care_route, Oban,
   engine: Oban.Engines.Basic,
   repo: CareRoute.Repo,
-  queues: [ai: 10]
+  queues: [ai: 10],
+  # Delete finished jobs after 7 days so the jobs table doesn't grow forever.
+  plugins: [{Oban.Plugins.Pruner, max_age: 7 * 24 * 60 * 60}]
 
 # Anthropic API (key is read at runtime in config/runtime.exs)
 config :care_route, :anthropic,

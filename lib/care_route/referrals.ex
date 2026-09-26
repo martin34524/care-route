@@ -48,11 +48,21 @@ defmodule CareRoute.Referrals do
   `{:referral_created, referral}` to clinicians.
   """
   def create_referral(attrs) do
-    with {:ok, referral} <- %Referral{} |> Referral.changeset(attrs) |> Repo.insert(),
-         {:ok, _job} <- Oban.insert(HandoffWorker.new(%{referral_id: referral.id})) do
-      referral = Repo.preload(referral, @preloads)
-      Phoenix.PubSub.broadcast(CareRoute.PubSub, @topic, {:referral_created, referral})
-      {:ok, referral}
+    # The referral and its summary job are saved together, so a referral can
+    # never exist without a summary job (or vice versa).
+    multi =
+      Ecto.Multi.new()
+      |> Ecto.Multi.insert(:referral, Referral.changeset(%Referral{}, attrs))
+      |> Oban.insert(:job, fn %{referral: r} -> HandoffWorker.new(%{referral_id: r.id}) end)
+
+    case Repo.transaction(multi) do
+      {:ok, %{referral: referral}} ->
+        referral = Repo.preload(referral, @preloads)
+        Phoenix.PubSub.broadcast(CareRoute.PubSub, @topic, {:referral_created, referral})
+        {:ok, referral}
+
+      {:error, _step, reason, _changes} ->
+        {:error, reason}
     end
   end
 

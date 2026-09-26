@@ -43,7 +43,7 @@ defmodule CareRoute.AI.Claude do
         end
 
       {:ok, %Req.Response{status: status, body: body}} ->
-        Logger.error("Claude API error #{status}: #{inspect(body)}")
+        Logger.error("Claude API error #{status}: #{CareRoute.AI.error_summary(body)}")
         {:error, {:http_error, status}}
 
       {:error, exception} ->
