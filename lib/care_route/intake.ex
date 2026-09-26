@@ -56,8 +56,11 @@ defmodule CareRoute.Intake do
     content = String.trim(content)
     extra = if opts[:via] == :voice, do: %{"via" => "voice"}, else: %{}
 
+    entry = Map.merge(entry("patient", content), extra)
+
+    # Answering also clears any "AI unavailable" notice.
     with true <- content != "" || {:error, :empty},
-         {:ok, conversation} <- append_message(conversation, "patient", content, extra),
+         {:ok, conversation} <- save_transcript(conversation, dialogue(conversation) ++ [entry]),
          {:ok, _job} <- Oban.insert(IntakeWorker.new(%{conversation_id: conversation.id})) do
       {:ok, conversation}
     end
@@ -71,6 +74,42 @@ defmodule CareRoute.Intake do
 
     conversation
     |> Conversation.changeset(%{transcript: conversation.transcript ++ [entry]})
+    |> Repo.update()
+    |> tap_broadcast()
+  end
+
+  @doc """
+  Posts an assistant notice that isn't part of the dialogue (e.g. the AI being
+  unavailable). Notices are never sent to the AI or shown to clinicians, and
+  are dropped when the patient answers or retries.
+  """
+  def post_notice(%Conversation{} = conversation, content) do
+    append_message(conversation, "assistant", content, %{"kind" => "notice"})
+  end
+
+  def notice?(%{"kind" => "notice"}), do: true
+  def notice?(_message), do: false
+
+  @doc "Drops a trailing notice and re-runs the AI on the patient's last answer."
+  def retry_last_answer(%Conversation{status: :gathering} = conversation) do
+    if notice?(List.last(conversation.transcript)) do
+      with {:ok, conversation} <- save_transcript(conversation, dialogue(conversation)),
+           {:ok, _job} <- Oban.insert(IntakeWorker.new(%{conversation_id: conversation.id})) do
+        {:ok, conversation}
+      end
+    else
+      {:error, :nothing_to_retry}
+    end
+  end
+
+  def retry_last_answer(%Conversation{}), do: {:error, :conversation_closed}
+
+  defp dialogue(%Conversation{transcript: transcript}), do: Enum.reject(transcript, &notice?/1)
+
+  # The changeset compares against the stored transcript, so the removal is saved.
+  defp save_transcript(%Conversation{} = conversation, transcript) do
+    conversation
+    |> Conversation.changeset(%{transcript: transcript})
     |> Repo.update()
     |> tap_broadcast()
   end

@@ -195,6 +195,7 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
   # spoken?}`; the first answer is the patient's own description.
   defp qa_pairs(%{conversation: %{transcript: transcript}}) do
     transcript
+    |> Enum.reject(&CareRoute.Intake.notice?/1)
     |> Enum.reduce({nil, []}, fn
       %{"role" => "patient", "content" => a} = msg, {q, acc} ->
         {nil, [{q, a, msg["via"] == "voice"} | acc]}

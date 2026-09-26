@@ -51,6 +51,7 @@ defmodule CareRoute.AI.HandoffPrompt do
 
     transcript =
       conversation.transcript
+      |> Enum.reject(&CareRoute.Intake.notice?/1)
       |> Enum.map_join("\n", fn %{"role" => role, "content" => c} = msg ->
         if msg["via"] == "voice", do: "#{role} (spoken): #{c}", else: "#{role}: #{c}"
       end)

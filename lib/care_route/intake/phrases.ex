@@ -53,6 +53,15 @@ defmodule CareRoute.Intake.Phrases do
     send: %{"en" => "Send message", "sw" => "Tuma ujumbe"},
     back: %{"en" => "Back to home", "sw" => "Rudi mwanzo"},
     see_recommendation: %{"en" => "See my recommendation", "sw" => "Ona pendekezo langu"},
+    ai_unavailable: %{
+      "en" =>
+        "Sorry — I'm having trouble connecting right now. Tap Try again, or send your " <>
+          "answer again. If this is an emergency, call your local emergency number.",
+      "sw" =>
+        "Samahani — nina tatizo la kuunganisha sasa hivi. Bonyeza Jaribu tena, au tuma " <>
+          "jibu lako tena. Ikiwa ni dharura, piga simu kwa namba ya dharura ya eneo lako."
+    },
+    try_again: %{"en" => "Try again", "sw" => "Jaribu tena"},
     # Voice answers
     voice_start: %{"en" => "Answer by voice", "sw" => "Jibu kwa sauti"},
     voice_stop: %{"en" => "Stop listening", "sw" => "Acha kusikiliza"},

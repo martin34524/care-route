@@ -101,6 +101,7 @@ defmodule CareRoute.AI.IntakePrompt do
   @doc "Converts the stored transcript into Messages API turns."
   def messages(transcript) do
     transcript
+    |> Enum.reject(&CareRoute.Intake.notice?/1)
     # The API requires the first turn to come from the user; drop the greeting.
     |> Enum.drop_while(&(&1["role"] != "patient"))
     |> Enum.map(fn

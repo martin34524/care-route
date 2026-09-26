@@ -41,6 +41,13 @@ defmodule CareRouteWeb.PatientLive.Intake do
     end
   end
 
+  def handle_event("retry", _params, socket) do
+    case Intake.retry_last_answer(socket.assigns.conversation) do
+      {:ok, conversation} -> {:noreply, assign_conversation(socket, conversation)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
   # Reported by the VoiceInput hook when speech recognition fails.
   def handle_event("voice-error", %{"error" => error}, socket) do
     key =
@@ -122,8 +129,21 @@ defmodule CareRouteWeb.PatientLive.Intake do
               role={msg["role"]}
               voice={msg["via"] == "voice"}
               voice_label={Phrases.t(:voice_spoken, @lang)}
+              notice={Intake.notice?(msg)}
             >
               <span class="whitespace-pre-line">{msg["content"]}</span>
+              <div :if={
+                Intake.notice?(msg) and @conversation.status == :gathering and
+                  i == length(@conversation.transcript) - 1
+              }>
+                <button
+                  id="retry-answer"
+                  phx-click="retry"
+                  class="mt-3 inline-flex items-center gap-2 bg-route hover:bg-route-dark text-white px-[18px] py-2 rounded-[9px] text-[13.5px] font-semibold"
+                >
+                  {Phrases.t(:try_again, @lang)}
+                </button>
+              </div>
               <div :if={
                 @conversation.status != :gathering and
                   i == length(@conversation.transcript) - 1 and
@@ -217,6 +237,7 @@ defmodule CareRouteWeb.PatientLive.Intake do
   attr :role, :string, required: true
   attr :voice, :boolean, default: false
   attr :voice_label, :string, default: nil
+  attr :notice, :boolean, default: false
   slot :inner_block, required: true
 
   defp message(assigns) do
@@ -244,10 +265,16 @@ defmodule CareRouteWeb.PatientLive.Intake do
       </div>
       <div class={[
         "max-w-[78%] px-4 py-3 text-sm leading-[1.55]",
-        if(@ai?,
-          do: "bg-white text-ink border border-line rounded-[4px_16px_16px_16px]",
-          else: "bg-route text-white rounded-[16px_4px_16px_16px]"
-        )
+        cond do
+          @notice ->
+            "bg-[#FBF3EA] text-[#6B4E1C] border border-[#F0DCC3] rounded-[4px_16px_16px_16px]"
+
+          @ai? ->
+            "bg-white text-ink border border-line rounded-[4px_16px_16px_16px]"
+
+          true ->
+            "bg-route text-white rounded-[16px_4px_16px_16px]"
+        end
       ]}>
         {render_slot(@inner_block)}
         <span
