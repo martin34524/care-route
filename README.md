@@ -151,7 +151,12 @@ microphone (voice answers) and location (nearest facilities) over HTTPS, which F
 - **Voice privacy.** Speech recognition runs in the browser; Chrome sends audio to Google's
   speech service. Browsers without the Web Speech API (e.g. Firefox) show typing only.
 - **Rate limits.** Gemini's free tier allows 5 requests per minute per model; use a paid key
-  (or set `ANTHROPIC_API_KEY` as a fallback) for a live demo.
+  for a live demo.
+
+**Demo backup plan.** With both `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` set, a failed
+Gemini call is retried on Claude automatically. If the network or AI services are down,
+set `AI_PROVIDER=stub` and restart: the whole flow keeps working on the offline stand-in
+(`gemini` or `claude` force those providers instead).
 - **Not a medical device.** CareRoute is a hackathon prototype for navigation, not clinical
   decision-making.
 

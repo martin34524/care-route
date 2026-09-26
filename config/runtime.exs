@@ -21,6 +21,13 @@ if config_env() != :test do
   config :care_route, :anthropic_api_key, System.get_env("ANTHROPIC_API_KEY")
   config :care_route, :gemini_api_key, System.get_env("GEMINI_API_KEY")
 
+  # Force an AI provider (demo backup plan): gemini, claude or stub.
+  case System.get_env("AI_PROVIDER") do
+    p when p in ~w(gemini claude stub) -> config :care_route, :ai_provider, String.to_atom(p)
+    nil -> :ok
+    other -> raise "AI_PROVIDER must be gemini, claude or stub, got: #{inspect(other)}"
+  end
+
   # Basic auth for /clinician and /admin. Required in production; optional in dev.
   staff_user = System.get_env("STAFF_USERNAME")
   staff_pass = System.get_env("STAFF_PASSWORD")

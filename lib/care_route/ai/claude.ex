@@ -32,7 +32,7 @@ defmodule CareRoute.AI.Claude do
       fallbacks: "default"
     }
 
-    case Req.post(req(), url: "/v1/messages", json: body) do
+    case Req.post(req(opts), url: "/v1/messages", json: body) do
       {:ok, %Req.Response{status: 200, body: %{"stop_reason" => "refusal"}}} ->
         {:error, :refusal}
 
@@ -51,11 +51,11 @@ defmodule CareRoute.AI.Claude do
     end
   end
 
-  defp req do
+  defp req(opts) do
     Req.new(
       base_url: config(:base_url),
       headers: [
-        {"x-api-key", api_key()},
+        {"x-api-key", Keyword.get(opts, :api_key, api_key())},
         {"anthropic-version", @api_version},
         {"anthropic-beta", @fallback_beta}
       ],
@@ -63,6 +63,7 @@ defmodule CareRoute.AI.Claude do
       # Oban owns retries/backoff for the job as a whole.
       retry: false
     )
+    |> Req.merge(Application.get_env(:care_route, :ai_req_options, []))
   end
 
   defp api_key, do: Application.get_env(:care_route, :anthropic_api_key)

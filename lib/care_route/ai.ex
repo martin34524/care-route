@@ -5,9 +5,16 @@ defmodule CareRoute.AI do
   Every call site describes its output as a tool (`name` + JSON `input_schema`)
   and passes an offline stub. The provider is picked by which key is set:
   Gemini, then Claude, then the stub — so the whole app runs without keys.
+
+  Backup plan for a live demo:
+    * If Gemini fails and an Anthropic key is also set, the call is retried on Claude.
+    * `AI_PROVIDER=gemini|claude|stub` (config `:ai_provider`) forces a provider,
+      e.g. `stub` to keep the demo running when the network or AI service is down.
   """
 
   alias CareRoute.AI.{Claude, Gemini}
+
+  require Logger
 
   @doc """
   A short, log-safe description of a provider error response: the error type
@@ -23,6 +30,7 @@ defmodule CareRoute.AI do
 
   def provider do
     cond do
+      forced = Application.get_env(:care_route, :ai_provider) -> forced
       Gemini.configured?() -> :gemini
       Claude.configured?() -> :claude
       true -> :stub
@@ -41,9 +49,21 @@ defmodule CareRoute.AI do
 
   defp call(provider, system, messages, tool, schema, stub_fun) do
     case provider do
-      :gemini -> Gemini.generate_json(system, messages, schema)
-      :claude -> Claude.call_tool(system, messages, tool)
-      :stub -> {:ok, stub_fun.()}
+      :gemini ->
+        with {:error, reason} <- Gemini.generate_json(system, messages, schema) do
+          if Claude.configured?() do
+            Logger.warning("Gemini failed (#{inspect(reason)}); retrying on Claude")
+            Claude.call_tool(system, messages, tool)
+          else
+            {:error, reason}
+          end
+        end
+
+      :claude ->
+        Claude.call_tool(system, messages, tool)
+
+      :stub ->
+        {:ok, stub_fun.()}
     end
   end
 end

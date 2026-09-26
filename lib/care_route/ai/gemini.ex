@@ -17,7 +17,8 @@ defmodule CareRoute.AI.Gemini do
   Sends `messages` (Messages-API style `%{role: "user" | "assistant", content: ...}`)
   with `system`, constrained to `schema`. Returns `{:ok, map}` or `{:error, reason}`.
 
-  Options: `:models` overrides the configured model fallback chain.
+  Options: `:models` overrides the configured model fallback chain; `:api_key`
+  overrides the configured key.
   """
   def generate_json(system, messages, schema, opts \\ []) do
     body = %{
@@ -31,25 +32,25 @@ defmodule CareRoute.AI.Gemini do
 
     opts
     |> Keyword.get_lazy(:models, fn -> config(:models) end)
-    |> try_models(body, {:error, :no_models})
+    |> try_models(body, {:error, :no_models}, opts)
   end
 
   # Falls through to the next model only when the current one is overloaded.
-  defp try_models([], _body, last_error), do: last_error
+  defp try_models([], _body, last_error, _opts), do: last_error
 
-  defp try_models([model | rest], body, _last_error) do
-    case request(model, body) do
+  defp try_models([model | rest], body, _last_error, opts) do
+    case request(model, body, opts) do
       {:error, {:http_error, status}} = error when status == 429 or status >= 500 ->
         Logger.warning("Gemini #{model} unavailable (#{status}), trying next model")
-        try_models(rest, body, error)
+        try_models(rest, body, error, opts)
 
       result ->
         result
     end
   end
 
-  defp request(model, body) do
-    case Req.post(req(), url: "/models/#{model}:generateContent", json: body) do
+  defp request(model, body, opts) do
+    case Req.post(req(opts), url: "/models/#{model}:generateContent", json: body) do
       {:ok, %Req.Response{status: 200, body: resp_body}} ->
         parse_response(resp_body)
 
@@ -79,16 +80,17 @@ defmodule CareRoute.AI.Gemini do
 
   defp parse_response(other), do: {:error, {:unexpected_response, other}}
 
-  defp req do
+  defp req(opts) do
     Req.new(
       base_url: @base_url,
-      headers: [{"x-goog-api-key", api_key()}],
+      headers: [{"x-goog-api-key", Keyword.get(opts, :api_key, api_key())}],
       receive_timeout: 60_000,
       # Gemini returns 503 "high demand" spikes that clear within seconds; retry
       # quickly here so the chat doesn't stall on Oban's slower job backoff.
       retry: :transient,
       max_retries: 1
     )
+    |> Req.merge(Application.get_env(:care_route, :ai_req_options, []))
   end
 
   defp api_key, do: Application.get_env(:care_route, :gemini_api_key)

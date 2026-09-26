@@ -40,6 +40,11 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
+# AI client tests stub HTTP with Req.Test and don't wait between retries.
+config :care_route, :ai_req_options,
+  plug: {Req.Test, CareRoute.AI},
+  retry_delay: fn _attempt -> 0 end
+
 # Staff pages are protected in tests; ConnCase adds these credentials by default.
 config :care_route, :staff_auth, username: "staff", password: "test-password"
 
