@@ -28,6 +28,40 @@ defmodule CareRoute.Intake.Phrases do
       "sw" =>
         "Asante — hizo ndizo taarifa zote ninazohitaji. Nina pendekezo tayari kwa ajili yako."
     },
+    # Start screen
+    start_title: %{"en" => "Before we start", "sw" => "Kabla hatujaanza"},
+    start_subtitle: %{
+      "en" =>
+        "A few details help CareRoute point you to the right care. It takes about three minutes.",
+      "sw" =>
+        "Taarifa chache zitasaidia CareRoute kukuelekeza kwenye huduma sahihi. Inachukua takriban dakika tatu."
+    },
+    field_language: %{"en" => "Language", "sw" => "Lugha"},
+    field_name: %{"en" => "Name (optional)", "sw" => "Jina (si lazima)"},
+    field_age: %{
+      "en" => "Age of the person who needs care",
+      "sw" => "Umri wa mtu anayehitaji huduma"
+    },
+    consent: %{
+      "en" =>
+        "I understand CareRoute doesn't diagnose, and that my answers are shared with the facility I choose.",
+      "sw" =>
+        "Ninaelewa kwamba CareRoute haitambui magonjwa, na kwamba majibu yangu yatashirikiwa na kituo nitakachochagua."
+    },
+    privacy_link: %{
+      "en" => "How we use your information",
+      "sw" => "Jinsi tunavyotumia taarifa zako"
+    },
+    start: %{"en" => "Start", "sw" => "Anza"},
+    consent_required: %{
+      "en" => "Please tick the box to continue.",
+      "sw" => "Tafadhali weka alama kwenye kisanduku ili kuendelea."
+    },
+    age_invalid: %{
+      "en" => "Enter an age between 0 and 129.",
+      "sw" => "Weka umri kati ya 0 na 129."
+    },
+    start_over: %{"en" => "Start over", "sw" => "Anza upya"},
     # Chat screen
     emergency_banner: %{
       "en" => "If this feels like a medical emergency, call %{numbers} now.",

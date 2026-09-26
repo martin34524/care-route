@@ -7,6 +7,7 @@ defmodule CareRoute.Intake.Patient do
     field :age, :integer
     field :contact, :string
     field :preferred_language, :string, default: "en"
+    field :consented_at, :utc_datetime
 
     has_many :conversations, CareRoute.Intake.Conversation
 
@@ -15,7 +16,9 @@ defmodule CareRoute.Intake.Patient do
 
   def changeset(patient, attrs) do
     patient
-    |> cast(attrs, [:name, :age, :contact, :preferred_language])
+    |> cast(attrs, [:name, :age, :contact, :preferred_language, :consented_at])
+    |> validate_length(:name, max: 80)
     |> validate_number(:age, greater_than_or_equal_to: 0, less_than: 130)
+    |> validate_inclusion(:preferred_language, Map.keys(CareRoute.Intake.Phrases.languages()))
   end
 end

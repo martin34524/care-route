@@ -148,6 +148,7 @@ defmodule CareRouteWeb.PatientLive.Results do
         back={~p"/intake/#{@conversation.token}"}
         back_label={Phrases.t(:back_to_chat, @lang)}
       >
+        <:actions><.start_over_link label={Phrases.t(:start_over, @lang)} /></:actions>
         <div class="text-center text-[13.5px] font-semibold text-ink-muted">
           {Phrases.t(:your_recommendation, @lang)}
         </div>

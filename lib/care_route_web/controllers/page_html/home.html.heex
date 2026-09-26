@@ -288,8 +288,14 @@
       <div class="text-[12.5px] text-[#8B958F]">© 2026 CareRoute AI. Built for DSH Hacks V2.</div>
       <div class="flex gap-6">
         <a
-          :for={label <- ["Privacy", "Terms", "Contact"]}
-          href="#safety"
+          :for={
+            {label, href} <- [
+              {"Privacy", ~p"/privacy"},
+              {"Terms", ~p"/privacy" <> "#terms"},
+              {"Contact", "https://github.com/martin34524/care-route"}
+            ]
+          }
+          href={href}
           class="text-[12.5px] text-[#6B756F] hover:text-ink"
         >
           {label}

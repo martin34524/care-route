@@ -103,10 +103,55 @@ defmodule CareRouteWeb.BrandComponents do
     """
   end
 
+  @doc "Red strip with the emergency advice and a tap-to-call link."
+  attr :lang, :string, required: true
+
+  def emergency_banner(assigns) do
+    ~H"""
+    <div
+      role="note"
+      class="flex items-center justify-center gap-[9px] px-5 py-2.5 bg-[#FBEAE6] border-b border-[#F1CFC5]"
+    >
+      <.warning_icon class="size-[15px] shrink-0 text-[#A23F26]" />
+      <span class="text-[12.5px] text-[#7A2E1B]">
+        {CareRoute.Intake.Phrases.t(:emergency_banner, @lang)}
+      </span>
+      <.call_link
+        id="emergency-call"
+        label={
+          CareRoute.Intake.Phrases.t(:call_now, @lang,
+            number: CareRoute.Intake.Phrases.emergency_number()
+          )
+        }
+        class="shrink-0 text-[12px] font-semibold text-white bg-[#A23F26] hover:bg-[#8A3420] px-2.5 py-1 rounded-md"
+      />
+    </div>
+    """
+  end
+
+  @doc "Header button that starts a fresh intake."
+  attr :label, :string, required: true
+
+  def start_over_link(assigns) do
+    ~H"""
+    <.link
+      id="start-over"
+      navigate="/start"
+      aria-label={@label}
+      title={@label}
+      class="flex items-center gap-1.5 h-9 px-2.5 rounded-[10px] border border-line text-ink-muted hover:bg-[#EAF1EE] text-[12.5px] font-semibold"
+    >
+      <.stroke_icon class="size-4" d="M4 4v5h5 M4.6 15a8 8 0 1 0 1.9-8.3L4 9" />
+      <span class="hidden sm:inline">{@label}</span>
+    </.link>
+    """
+  end
+
   @doc "White patient-page header: back button, logo, and a centered middle slot."
   attr :back, :string, required: true
   attr :back_label, :string, required: true
   slot :inner_block, required: true
+  slot :actions, doc: "Right-hand buttons; keeps the middle centered when empty"
 
   def patient_header(assigns) do
     ~H"""
@@ -123,7 +168,8 @@ defmodule CareRouteWeb.BrandComponents do
         <span class="font-display font-semibold text-[15px]">CareRoute AI</span>
       </div>
       <div class="grow min-w-0">{render_slot(@inner_block)}</div>
-      <div class="w-9 shrink-0"></div>
+      <div :if={@actions == []} class="w-9 shrink-0"></div>
+      <div :if={@actions != []} class="shrink-0">{render_slot(@actions)}</div>
     </header>
     """
   end

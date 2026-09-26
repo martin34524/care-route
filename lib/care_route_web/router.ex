@@ -24,6 +24,7 @@ defmodule CareRouteWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/privacy", PageController, :privacy
 
     live_session :patient do
       live "/start", PatientLive.Start

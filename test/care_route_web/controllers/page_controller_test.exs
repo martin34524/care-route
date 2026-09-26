@@ -30,6 +30,19 @@ defmodule CareRouteWeb.PageControllerTest do
 
   test "Start now opens the intake start screen", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/start")
-    assert html =~ "Not sure where to go for care?"
+    assert html =~ "Before we start"
+  end
+
+  test "the privacy page explains data use and terms", %{conn: conn} do
+    html = conn |> get(~p"/privacy") |> html_response(200)
+    assert html =~ "How CareRoute uses your information"
+    assert html =~ ~s(id="terms")
+    assert html =~ "999 or 112"
+  end
+
+  test "the landing footer links to the privacy page", %{conn: conn} do
+    html = conn |> get(~p"/") |> html_response(200)
+    assert html =~ ~s(href="/privacy")
+    assert html =~ ~s(href="/privacy#terms")
   end
 end

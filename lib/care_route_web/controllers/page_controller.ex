@@ -6,4 +6,10 @@ defmodule CareRouteWeb.PageController do
     |> assign(:page_title, "Find the right care, right away")
     |> render(:home)
   end
+
+  def privacy(conn, _params) do
+    conn
+    |> assign(:page_title, "Privacy and terms")
+    |> render(:privacy)
+  end
 end

@@ -92,22 +92,11 @@ defmodule CareRouteWeb.PatientLive.Intake do
 
     ~H"""
     <div class="min-h-screen flex flex-col bg-paper text-ink font-plex antialiased">
-      <%!-- Safety banner --%>
-      <div
-        role="note"
-        class="flex items-center justify-center gap-[9px] px-5 py-2.5 bg-[#FBEAE6] border-b border-[#F1CFC5]"
-      >
-        <.warning_icon class="size-[15px] shrink-0 text-[#A23F26]" />
-        <span class="text-[12.5px] text-[#7A2E1B]">{Phrases.t(:emergency_banner, @lang)}</span>
-        <.call_link
-          id="emergency-call"
-          label={Phrases.t(:call_now, @lang, number: Phrases.emergency_number())}
-          class="shrink-0 text-[12px] font-semibold text-white bg-[#A23F26] hover:bg-[#8A3420] px-2.5 py-1 rounded-md"
-        />
-      </div>
+      <.emergency_banner lang={@lang} />
 
       <%!-- Header --%>
       <.patient_header back={~p"/"} back_label={Phrases.t(:back, @lang)}>
+        <:actions><.start_over_link label={Phrases.t(:start_over, @lang)} /></:actions>
         <div class="max-w-[340px] mx-auto flex flex-col gap-[5px]">
           <div class="h-[5px] rounded-full bg-line overflow-hidden">
             <div

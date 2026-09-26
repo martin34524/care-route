@@ -1,0 +1,68 @@
+<div class="min-h-screen bg-paper text-ink font-plex antialiased">
+  <.patient_header back={~p"/"} back_label="Back to home">
+    <div class="text-center text-[13.5px] font-semibold text-ink-muted">Privacy and terms</div>
+  </.patient_header>
+
+  <main class="max-w-[720px] mx-auto px-4 sm:px-6 pt-10 pb-16">
+    <article class="bg-white border border-line rounded-[20px] px-6 py-7 sm:px-10 sm:py-9 text-[14.5px] leading-[1.7] text-ink-muted [&_h2]:font-display [&_h2]:font-semibold [&_h2]:text-xl [&_h2]:text-ink [&_h2]:mt-8 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1">
+      <h1 class="font-display font-semibold text-[30px] leading-tight text-ink mb-3">
+        How CareRoute uses your information
+      </h1>
+      <p>
+        CareRoute AI is a hackathon prototype that helps you choose the right level of care. It
+        is a navigator, not a diagnostic tool, and it does not replace a clinician. If this may
+        be an emergency, call 999 or 112 (Kenya) now.
+      </p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li>What you type or say in the chat, and the optional name and age you give.</li>
+        <li>The recommendation CareRoute makes and the facility you choose.</li>
+        <li>The time you agreed to this notice.</li>
+      </ul>
+
+      <h2>Who sees it</h2>
+      <ul>
+        <li>
+          Clinicians at the facility you choose see your answers, an AI summary, and the
+          recommendation, so they can prepare for your visit.
+        </li>
+        <li>
+          Your answers are sent to an AI service (Google Gemini, or Anthropic Claude as a
+          backup) to decide the next question and write the clinician summary.
+        </li>
+        <li>
+          If you answer by voice, your browser's speech service turns speech into text. In
+          Chrome this sends the audio to Google.
+        </li>
+        <li>
+          The map loads tiles from OpenStreetMap. If you share your location, it's used only in
+          your browser session to sort facilities by distance and isn't stored.
+        </li>
+      </ul>
+
+      <h2>How long we keep it</h2>
+      <p>
+        This is a demo system: data may be deleted at any time, for example before each
+        rehearsal. Please don't use it for a real medical situation.
+      </p>
+
+      <h2 id="terms" class="scroll-mt-6">Terms of use</h2>
+      <ul>
+        <li>CareRoute gives navigation suggestions only; it does not diagnose or treat.</li>
+        <li>Always follow the advice of a clinician over CareRoute's suggestion.</li>
+        <li>In an emergency, call 999 or 112 instead of using CareRoute.</li>
+      </ul>
+
+      <h2>Contact</h2>
+      <p>
+        Questions or problems: open an issue at <a
+          href="https://github.com/martin34524/care-route"
+          class="text-route font-semibold underline underline-offset-2"
+        >
+          github.com/martin34524/care-route
+        </a>.
+      </p>
+    </article>
+  </main>
+</div>
