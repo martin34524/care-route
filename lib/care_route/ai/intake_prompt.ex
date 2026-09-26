@@ -20,7 +20,10 @@ defmodule CareRoute.AI.IntakePrompt do
     - next_action:
       - "escalate_urgent" as soon as any red flag is present; set urgency_signal true.
       - "ask_question" if you need more information; put ONE short, plain-language
-        question in next_question.
+        question in next_question. Ask about one thing at a time (not "X, and also
+        Y?"), and never ask about something the patient has already told you anywhere
+        in the conversation, even in passing. Prioritise checking for red flags
+        early.
       - "ready_for_recommendation" once you know the main symptoms, duration, severity,
         and have checked for red flags (usually 2-4 questions, never more than 5);
         fill recommendation.
