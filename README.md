@@ -9,6 +9,9 @@ description into a next step (self-care, clinic, or urgent care) and a clinician
     set -a; . ./.env; set +a         # loads GEMINI_API_KEY (gitignored)
     mix phx.server
 
+Before a demo rehearsal, `mix care_route.demo_reset --yes` clears all patient data
+and reseeds facilities (without `--yes` it only shows what it would delete).
+
 `/clinician` and `/admin` use basic auth from `STAFF_USERNAME` / `STAFF_PASSWORD`
 (required in production; if unset in dev they're open). Put them in `.env`.
 
