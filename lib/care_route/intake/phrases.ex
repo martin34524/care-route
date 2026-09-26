@@ -42,6 +42,14 @@ defmodule CareRoute.Intake.Phrases do
       "en" => "Age of the person who needs care",
       "sw" => "Umri wa mtu anayehitaji huduma"
     },
+    field_phone: %{
+      "en" => "Phone (optional) — so the clinic can reach you",
+      "sw" => "Simu (si lazima) — ili kituo kiweze kukupata"
+    },
+    phone_invalid: %{
+      "en" => "Enter a phone number like 0712 345678 or +254 712 345678.",
+      "sw" => "Weka namba ya simu kama 0712 345678 au +254 712 345678."
+    },
     consent: %{
       "en" =>
         "I understand CareRoute doesn't diagnose, and that my answers are shared with the facility I choose.",

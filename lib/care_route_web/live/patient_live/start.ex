@@ -14,7 +14,7 @@ defmodule CareRouteWeb.PatientLive.Start do
      assign(socket,
        page_title: "Get care guidance",
        lang: "en",
-       params: %{"name" => "", "age" => "", "consent" => "false"},
+       params: %{"name" => "", "age" => "", "contact" => "", "consent" => "false"},
        error: nil
      )}
   end
@@ -32,6 +32,7 @@ defmodule CareRouteWeb.PatientLive.Start do
       attrs = %{
         name: blank_to_nil(params["name"]),
         age: blank_to_nil(params["age"]),
+        contact: blank_to_nil(params["contact"]),
         preferred_language: lang,
         consented_at: DateTime.utc_now(:second)
       }
@@ -41,7 +42,13 @@ defmodule CareRouteWeb.PatientLive.Start do
         {:noreply, push_navigate(socket, to: ~p"/intake/#{conversation.token}")}
       else
         {:error, %Ecto.Changeset{errors: errors}} ->
-          key = if Keyword.has_key?(errors, :age), do: :age_invalid, else: :consent_required
+          key =
+            cond do
+              Keyword.has_key?(errors, :age) -> :age_invalid
+              Keyword.has_key?(errors, :contact) -> :phone_invalid
+              true -> :consent_required
+            end
+
           {:noreply, assign(socket, error: key)}
       end
     else
@@ -139,6 +146,24 @@ defmodule CareRouteWeb.PatientLive.Start do
                 class={[
                   "w-full rounded-[10px] border px-3.5 py-2.5 text-sm outline-none focus:border-route",
                   if(@error == :age_invalid, do: "border-[#A23F26]", else: "border-line")
+                ]}
+              />
+            </div>
+
+            <div>
+              <label for="patient-contact" class="block text-[13px] font-semibold mb-1.5">
+                {Phrases.t(:field_phone, @lang)}
+              </label>
+              <input
+                id="patient-contact"
+                name="patient[contact]"
+                type="tel"
+                autocomplete="tel"
+                maxlength="20"
+                value={@params["contact"]}
+                class={[
+                  "w-full rounded-[10px] border px-3.5 py-2.5 text-sm outline-none focus:border-route",
+                  if(@error == :phone_invalid, do: "border-[#A23F26]", else: "border-line")
                 ]}
               />
             </div>

@@ -505,7 +505,14 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
       <div class="text-[12.5px] text-[#6B756F] mb-[18px]">
         {complaint(@referral)} · received {ago(@referral.inserted_at, @now)}
         <span class="block mt-0.5">
-          Age {@referral.patient.age || "not reported"} · to {@referral.to_facility.name} ·
+          Age {@referral.patient.age || "not reported"} ·
+          <a
+            :if={@referral.patient.contact}
+            id="patient-contact"
+            href={"tel:" <> String.replace(@referral.patient.contact, ~r/[^+0-9]/, "")}
+            class="font-semibold text-route underline underline-offset-2"
+          >{@referral.patient.contact}</a><span :if={!@referral.patient.contact}>no phone given</span>
+          · to {@referral.to_facility.name} ·
           <span class={["font-semibold", status_class(@referral.status)]}>
             {status_label(@referral.status)}
           </span>

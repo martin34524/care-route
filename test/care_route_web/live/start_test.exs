@@ -43,6 +43,39 @@ defmodule CareRouteWeb.StartTest do
     assert [%{preferred_language: "sw"}] = Repo.all(Patient)
   end
 
+  test "an optional phone number is saved and shown to the clinician", %{conn: conn} do
+    {:ok, clinic} = CareRoute.Facilities.create_facility(%{name: "Test Clinic", type: :clinic})
+    {:ok, view, _} = live(conn, ~p"/start")
+
+    submit(view, %{contact: " +254 712 345678 ", consent: "true"})
+    assert [patient] = Repo.all(Patient)
+    assert patient.contact == "+254 712 345678"
+
+    conversation = Repo.one!(CareRoute.Intake.Conversation)
+
+    {:ok, referral} =
+      CareRoute.Referrals.create_referral(%{
+        patient_id: patient.id,
+        conversation_id: conversation.id,
+        to_facility_id: clinic.id
+      })
+
+    {:ok, clinician, _} = live(conn, ~p"/clinician/referrals/#{referral.id}")
+
+    assert has_element?(
+             clinician,
+             ~s(#patient-contact[href="tel:+254712345678"]),
+             "+254 712 345678"
+           )
+  end
+
+  test "a malformed phone number shows an error", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/start")
+    submit(view, %{contact: "call me maybe", consent: "true"})
+    assert has_element?(view, "#start-error", "Enter a phone number like")
+    assert Repo.aggregate(Patient, :count) == 0
+  end
+
   test "an impossible age shows an error", %{conn: conn} do
     {:ok, view, _} = live(conn, ~p"/start")
     submit(view, %{age: "400", consent: "true"})
