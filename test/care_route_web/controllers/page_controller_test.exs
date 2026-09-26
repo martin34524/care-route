@@ -33,6 +33,21 @@ defmodule CareRouteWeb.PageControllerTest do
     assert html =~ "Before we start"
   end
 
+  test "the app is installable: manifest, icons and service worker", %{conn: conn} do
+    html = conn |> get(~p"/") |> html_response(200)
+    assert html =~ ~s(rel="manifest" href="/manifest.webmanifest")
+
+    manifest = build_conn() |> get("/manifest.webmanifest") |> response(200) |> Jason.decode!()
+    assert manifest["start_url"] == "/start"
+    assert manifest["display"] == "standalone"
+
+    for %{"src" => src} <- manifest["icons"] do
+      assert build_conn() |> get(src) |> response(200), src
+    end
+
+    assert build_conn() |> get("/sw.js") |> response(200) =~ "addEventListener"
+  end
+
   test "the privacy page explains data use and terms", %{conn: conn} do
     html = conn |> get(~p"/privacy") |> html_response(200)
     assert html =~ "How CareRoute uses your information"

@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <.live_title default="CareRoute" suffix=" · CareRoute AI" phx-no-format>{assigns[:page_title]}</.live_title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#1D6B64" />
+    <link rel="apple-touch-icon" href={~p"/images/icons/apple-touch-icon.png"} />
+    <link rel="icon" type="image/svg+xml" href={~p"/images/icons/icon.svg"} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

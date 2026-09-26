@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed background so the icon also works as a maskable icon;
+       the logo stays inside the central safe zone. -->
+  <rect width="512" height="512" fill="#1D6B64"/>
+  <g transform="translate(136 136) scale(10)" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="6" cy="18" r="2.4"/>
+    <circle cx="18" cy="6" r="2.4"/>
+    <path d="M8.1 16.5 15 8.7" stroke-dasharray="2 3"/>
+    <circle cx="17" cy="17" r="1.2" fill="#FFFFFF" stroke="none"/>
+  </g>
+</svg>
