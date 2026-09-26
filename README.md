@@ -43,3 +43,28 @@ OpenStreetMap tiles). If the browser shares a location within 100 km of the netw
 facilities are re-sorted by real distance; otherwise distances are from the demo origin
 in `config :care_route, :demo_origin`. Re-run `mix run priv/repo/seeds.exs` any time; it
 updates facilities in place.
+
+## Deploying (Fly.io)
+
+The repo has a production release and `Dockerfile` (`mix phx.gen.release --docker`).
+A local production build has been checked end to end: migrate, seed, boot, login.
+
+    fly launch --no-deploy            # detects the Dockerfile; say yes to Postgres
+    fly secrets set \
+      SECRET_KEY_BASE=$(mix phx.gen.secret) \
+      GEMINI_API_KEY=... \
+      STAFF_USERNAME=... STAFF_PASSWORD=...
+    fly deploy
+
+In `fly.toml`, run migrations on every deploy:
+
+    [deploy]
+      release_command = "/app/bin/migrate"
+
+Then seed the facility directory once (safe to re-run):
+
+    fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.seed()"'
+
+Set `PHX_HOST` to the app's hostname (e.g. `care-route.fly.dev`). Phones only allow
+the microphone (voice answers) and location (nearest facilities) over HTTPS, which
+Fly provides.

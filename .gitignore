@@ -38,3 +38,7 @@ npm-debug.log
 
 # Local secrets
 .env
+
+# Output of `mix assets.deploy` / `mix phx.digest` (the Docker build regenerates it)
+/priv/static/**/*.gz
+/priv/static/**/*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*.*
