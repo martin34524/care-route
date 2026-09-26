@@ -11,13 +11,13 @@ defmodule CareRouteWeb.PatientLive.Results do
   @building_icon "M4 21V7l8-4 8 4v14 M9 21v-6h6v6 M12 7v4 M10 9h4"
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
-    conversation = Intake.get_conversation!(id)
+  def mount(%{"token" => token}, _session, socket) do
+    conversation = Intake.get_conversation_by_token!(token)
 
     case conversation.care_recommendation do
       nil ->
         # Intake isn't finished yet; send the patient back to the chat.
-        {:ok, push_navigate(socket, to: ~p"/intake/#{conversation.id}")}
+        {:ok, push_navigate(socket, to: ~p"/intake/#{conversation.token}")}
 
       rec ->
         origin = Map.put(Facilities.demo_origin(), :source, "demo")
@@ -145,7 +145,7 @@ defmodule CareRouteWeb.PatientLive.Results do
     ~H"""
     <div class="min-h-screen bg-paper text-ink font-plex antialiased">
       <.patient_header
-        back={~p"/intake/#{@conversation.id}"}
+        back={~p"/intake/#{@conversation.token}"}
         back_label={Phrases.t(:back_to_chat, @lang)}
       >
         <div class="text-center text-[13.5px] font-semibold text-ink-muted">

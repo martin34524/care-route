@@ -14,7 +14,7 @@ defmodule CareRouteWeb.PatientLive.Start do
   def handle_event("start", params, socket) do
     with {:ok, patient} <- Intake.create_patient(params),
          {:ok, conversation} <- Intake.start_conversation(patient) do
-      {:noreply, push_navigate(socket, to: ~p"/intake/#{conversation.id}")}
+      {:noreply, push_navigate(socket, to: ~p"/intake/#{conversation.token}")}
     else
       {:error, changeset} -> {:noreply, assign(socket, form: to_form(changeset))}
     end

@@ -20,8 +20,8 @@ defmodule CareRouteWeb.Router do
     get "/", PageController, :home
 
     live "/start", PatientLive.Start
-    live "/intake/:id", PatientLive.Intake
-    live "/intake/:id/results", PatientLive.Results
+    live "/intake/:token", PatientLive.Intake
+    live "/intake/:token/results", PatientLive.Results
 
     live "/clinician", ClinicianLive.Dashboard, :index
     live "/clinician/referrals/:id", ClinicianLive.Dashboard, :show

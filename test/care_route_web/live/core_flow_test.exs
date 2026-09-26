@@ -31,7 +31,7 @@ defmodule CareRouteWeb.CoreFlowTest do
     clinic: clinic
   } do
     {:ok, clinician_view, _} = live(conn, ~p"/clinician")
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 
     say(view, conversation, "My 3-year-old has had a fever")
     assert render(view) =~ "How long"
@@ -42,7 +42,7 @@ defmodule CareRouteWeb.CoreFlowTest do
     # The chat hands off to the results page.
     assert {:ok, results, _} =
              view
-             |> element(~s(a[href="/intake/#{conversation.id}/results"]))
+             |> element(~s(a[href="/intake/#{conversation.token}/results"]))
              |> render_click()
              |> follow_redirect(conn)
 
@@ -54,7 +54,7 @@ defmodule CareRouteWeb.CoreFlowTest do
     assert has_element?(results, "#facility-#{clinic.id}", "Referral sent")
 
     # The referral is still shown after a reload.
-    {:ok, reloaded, _} = live(conn, ~p"/intake/#{conversation.id}/results")
+    {:ok, reloaded, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     assert has_element?(reloaded, "#referral-sent", "Test Clinic")
 
     assert render(clinician_view) =~ "Test Clinic"
@@ -74,7 +74,7 @@ defmodule CareRouteWeb.CoreFlowTest do
     conn: conn,
     conversation: conversation
   } do
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
     assert render(view) =~ "Question 1 of 4"
     assert has_element?(view, "#message-input-0")
 
@@ -98,7 +98,7 @@ defmodule CareRouteWeb.CoreFlowTest do
   test "Kiswahili patients get fixed messages in Kiswahili", %{conn: conn} do
     {:ok, patient} = Intake.create_patient(%{age: 30, preferred_language: "sw"})
     {:ok, conversation} = Intake.start_conversation(patient)
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 
     assert render(view) =~ "Habari, mimi ni CareRoute"
     say(view, conversation, "Nina homa na ninashindwa kupumua, chest pain")
@@ -107,7 +107,7 @@ defmodule CareRouteWeb.CoreFlowTest do
     assert render(view) =~ "Ona pendekezo langu"
 
     # The whole results page is in Kiswahili too.
-    {:ok, results, _} = live(conn, ~p"/intake/#{conversation.id}/results")
+    {:ok, results, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     assert has_element?(results, "#recommendation", "Huduma ya dharura")
     assert has_element?(results, "#recommendation", "Tuma rufaa kwa mhudumu wa afya")
     assert has_element?(results, "#facilities", "Omba rufaa")
@@ -122,9 +122,9 @@ defmodule CareRouteWeb.CoreFlowTest do
     {:ok, admin, _} = live(conn, ~p"/admin")
     assert has_element?(admin, "#stat-in-progress", "1")
 
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
     say(view, conversation, "Chest pain and trouble breathing")
-    {:ok, results, _} = live(conn, ~p"/intake/#{conversation.id}/results")
+    {:ok, results, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     results |> element("#facility-#{hospital.id} button") |> render_click()
 
     assert has_element?(admin, "#stat-urgent", "1")
@@ -136,7 +136,7 @@ defmodule CareRouteWeb.CoreFlowTest do
     conversation: conversation,
     hospital: hospital
   } do
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 
     say(view, conversation, "Fever and she is having trouble breathing")
 
@@ -145,13 +145,13 @@ defmodule CareRouteWeb.CoreFlowTest do
 
     assert has_element?(
              view,
-             ~s(a[href="/intake/#{conversation.id}/results"]),
+             ~s(a[href="/intake/#{conversation.token}/results"]),
              "See my recommendation"
            )
 
     assert Intake.get_conversation!(conversation.id).status == :urgent
 
-    {:ok, results, _} = live(conn, ~p"/intake/#{conversation.id}/results")
+    {:ok, results, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     assert has_element?(results, "#recommendation", "Urgent care")
     assert has_element?(results, "#recommendation", "High urgency · seek care now")
     assert has_element?(results, "#recommendation", "Find urgent care near me")
@@ -163,13 +163,25 @@ defmodule CareRouteWeb.CoreFlowTest do
     refute has_element?(results, "#send-referral")
   end
 
+  test "patient links use an unguessable token, not the sequential id", %{
+    conn: conn,
+    conversation: conversation
+  } do
+    assert String.length(conversation.token) >= 22
+    refute conversation.token == to_string(conversation.id)
+
+    assert_raise Ecto.NoResultsError, fn -> live(conn, "/intake/#{conversation.id}") end
+    assert_raise Ecto.NoResultsError, fn -> live(conn, "/intake/#{conversation.id}/results") end
+    assert {:ok, _view, _} = live(conn, ~p"/intake/#{conversation.token}")
+  end
+
   test "results page sends unfinished intakes back to the chat", %{
     conn: conn,
     conversation: conversation
   } do
     assert {:error, {:live_redirect, %{to: to}}} =
-             live(conn, ~p"/intake/#{conversation.id}/results")
+             live(conn, ~p"/intake/#{conversation.token}/results")
 
-    assert to == ~p"/intake/#{conversation.id}"
+    assert to == ~p"/intake/#{conversation.token}"
   end
 end

@@ -37,6 +37,13 @@ defmodule CareRoute.Intake do
     |> Repo.insert()
   end
 
+  @doc "Looks up a conversation by the random token used in patient URLs."
+  def get_conversation_by_token!(token) do
+    Conversation
+    |> Repo.get_by!(token: token)
+    |> Repo.preload([:patient, :symptom_report, :care_recommendation])
+  end
+
   def get_conversation!(id) do
     Conversation
     |> Repo.get!(id)

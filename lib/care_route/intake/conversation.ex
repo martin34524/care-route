@@ -5,6 +5,8 @@ defmodule CareRoute.Intake.Conversation do
   @statuses ~w(gathering urgent assessed)a
 
   schema "conversations" do
+    # Random, unguessable id used in patient URLs instead of the sequential id.
+    field :token, :string
     field :status, Ecto.Enum, values: @statuses, default: :gathering
     field :transcript, {:array, :map}, default: []
 
@@ -20,7 +22,19 @@ defmodule CareRoute.Intake.Conversation do
   def changeset(conversation, attrs) do
     conversation
     |> cast(attrs, [:patient_id, :status, :transcript])
-    |> validate_required([:patient_id, :status])
+    |> put_token()
+    |> validate_required([:patient_id, :status, :token])
+    |> unique_constraint(:token)
     |> foreign_key_constraint(:patient_id)
   end
+
+  defp put_token(%Ecto.Changeset{data: %{token: nil}} = changeset) do
+    put_change(
+      changeset,
+      :token,
+      :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
+    )
+  end
+
+  defp put_token(changeset), do: changeset
 end

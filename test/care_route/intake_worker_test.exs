@@ -36,7 +36,7 @@ defmodule CareRoute.IntakeWorkerTest do
     conn: conn,
     conversation: c
   } do
-    {:ok, view, _} = live(conn, ~p"/intake/#{c.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{c.token}")
     assert has_element?(view, "#thinking")
 
     Process.put(:care_route_ai_result, {:error, :timeout})

@@ -28,7 +28,7 @@ defmodule CareRouteWeb.FacilityMapTest do
 
     {:ok, patient} = Intake.create_patient(%{age: 40})
     {:ok, conversation} = Intake.start_conversation(patient)
-    {:ok, view, _} = live(build_conn(), ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(build_conn(), ~p"/intake/#{conversation.token}")
 
     view
     |> form("#message-form", %{message: "chest pain and trouble breathing"})
@@ -36,7 +36,7 @@ defmodule CareRouteWeb.FacilityMapTest do
 
     assert :ok = perform_job(IntakeWorker, %{conversation_id: conversation.id})
 
-    {:ok, results, _} = live(build_conn(), ~p"/intake/#{conversation.id}/results")
+    {:ok, results, _} = live(build_conn(), ~p"/intake/#{conversation.token}/results")
     %{view: results, west: west, east: east}
   end
 

@@ -16,7 +16,7 @@ defmodule CareRouteWeb.VoiceInputTest do
   test "the mic is offered while intake is open, in the patient's language", %{conn: conn} do
     {:ok, patient} = Intake.create_patient(%{preferred_language: "sw"})
     {:ok, conversation} = Intake.start_conversation(patient)
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 
     assert has_element?(view, "#voice-input[phx-hook=VoiceInput][data-lang=sw-KE]")
     assert has_element?(view, "#voice-input button[aria-label='Jibu kwa sauti']")
@@ -32,7 +32,7 @@ defmodule CareRouteWeb.VoiceInputTest do
     conn: conn,
     conversation: conversation
   } do
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 
     # input_mode is set by the VoiceInput hook in the browser.
     view
@@ -57,7 +57,7 @@ defmodule CareRouteWeb.VoiceInputTest do
   end
 
   test "recognition errors show a friendly message", %{conn: conn, conversation: conversation} do
-    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.id}")
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 
     render_hook(view, "voice-error", %{"error" => "not-allowed"})
     assert render(view) =~ "Microphone access is blocked"

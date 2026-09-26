@@ -11,8 +11,8 @@ defmodule CareRouteWeb.PatientLive.Intake do
   @patient_icon "M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z M4 20.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
-    conversation = Intake.get_conversation!(id)
+  def mount(%{"token" => token}, _session, socket) do
+    conversation = Intake.get_conversation_by_token!(token)
     if connected?(socket), do: Intake.subscribe(conversation.id)
 
     {:ok,
@@ -150,7 +150,7 @@ defmodule CareRouteWeb.PatientLive.Intake do
                   @conversation.care_recommendation
               }>
                 <.link
-                  navigate={~p"/intake/#{@conversation.id}/results"}
+                  navigate={~p"/intake/#{@conversation.token}/results"}
                   class="mt-3 inline-flex items-center gap-2 bg-route hover:bg-route-dark text-white px-[18px] py-2.5 rounded-[9px] text-[13.5px] font-semibold"
                 >
                   {Phrases.t(:see_recommendation, @lang)} <.arrow_icon class="size-3.5" />
