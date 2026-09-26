@@ -37,6 +37,9 @@ export default {
     const input = this.field("message")
     if (!input || input.disabled) return
 
+    // Don't let the microphone pick up questions being read aloud.
+    window.speechSynthesis?.cancel()
+
     const rec = new Recognition()
     rec.lang = this.el.dataset.lang
     rec.interimResults = true

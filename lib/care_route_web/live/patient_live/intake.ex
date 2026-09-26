@@ -62,7 +62,26 @@ defmodule CareRouteWeb.PatientLive.Intake do
 
   @impl true
   def handle_info({:conversation_updated, %{id: id}}, socket) do
-    {:noreply, assign_conversation(socket, Intake.get_conversation!(id))}
+    previous = socket.assigns.conversation
+    conversation = Intake.get_conversation!(id)
+
+    {:noreply,
+     socket
+     |> assign_conversation(conversation)
+     |> read_aloud_new_message(previous, conversation)}
+  end
+
+  # Tells the ReadAloud hook about a newly arrived assistant message; the hook
+  # only speaks it if the patient turned reading aloud on.
+  defp read_aloud_new_message(socket, previous, conversation) do
+    last = List.last(conversation.transcript)
+
+    if length(conversation.transcript) > length(previous.transcript) and
+         last["role"] == "assistant" do
+      push_event(socket, "read-aloud", %{text: last["content"]})
+    else
+      socket
+    end
   end
 
   defp assign_conversation(socket, conversation) do
@@ -96,7 +115,34 @@ defmodule CareRouteWeb.PatientLive.Intake do
 
       <%!-- Header --%>
       <.patient_header back={~p"/"} back_label={Phrases.t(:back, @lang)}>
-        <:actions><.start_over_link label={Phrases.t(:start_over, @lang)} /></:actions>
+        <:actions>
+          <div class="flex items-center gap-2">
+            <div
+              id="read-aloud"
+              phx-hook="ReadAloud"
+              phx-update="ignore"
+              data-lang={speech_lang(@lang)}
+              data-latest={latest_assistant_text(@conversation)}
+              data-label-on={Phrases.t(:read_aloud_on, @lang)}
+              data-label-off={Phrases.t(:read_aloud_off, @lang)}
+              class="hidden"
+            >
+              <button
+                type="button"
+                aria-pressed="false"
+                aria-label={Phrases.t(:read_aloud_on, @lang)}
+                title={Phrases.t(:read_aloud_on, @lang)}
+                class="flex items-center justify-center size-9 rounded-[10px] border border-line text-ink-muted hover:bg-[#EAF1EE] aria-pressed:bg-route-soft aria-pressed:border-route aria-pressed:text-route-deep"
+              >
+                <.stroke_icon
+                  class="size-[18px]"
+                  d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z M15.5 9a4 4 0 0 1 0 6 M18 6.5a7.5 7.5 0 0 1 0 11"
+                />
+              </button>
+            </div>
+            <.start_over_link label={Phrases.t(:start_over, @lang)} />
+          </div>
+        </:actions>
         <div class="max-w-[340px] mx-auto flex flex-col gap-[5px]">
           <div class="h-[5px] rounded-full bg-line overflow-hidden">
             <div
@@ -282,6 +328,12 @@ defmodule CareRouteWeb.PatientLive.Intake do
       </div>
     </div>
     """
+  end
+
+  defp latest_assistant_text(%{transcript: transcript}) do
+    transcript
+    |> Enum.reverse()
+    |> Enum.find_value("", &(&1["role"] == "assistant" && &1["content"]))
   end
 
   # Speech recognition locale for the patient's language.

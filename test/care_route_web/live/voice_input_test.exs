@@ -56,6 +56,23 @@ defmodule CareRouteWeb.VoiceInputTest do
     refute has_element?(view, "#msg-3 [aria-label='Spoken answer']")
   end
 
+  test "new questions are sent to the read-aloud toggle", %{
+    conn: conn,
+    conversation: conversation
+  } do
+    {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
+
+    assert has_element?(view, "#read-aloud[phx-hook=ReadAloud][data-lang=en-KE]")
+    assert has_element?(view, "#read-aloud[data-latest^='Hi, I’m CareRoute']")
+    assert has_element?(view, "#read-aloud button[aria-label='Read questions aloud']")
+
+    view |> form("#message-form", %{message: "I have a cough"}) |> render_submit()
+    refute_push_event(view, "read-aloud", %{})
+
+    assert :ok = perform_job(IntakeWorker, %{conversation_id: conversation.id})
+    assert_push_event(view, "read-aloud", %{text: "How long has this been going on?"})
+  end
+
   test "recognition errors show a friendly message", %{conn: conn, conversation: conversation} do
     {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
 

@@ -27,12 +27,13 @@ import topbar from "../vendor/topbar"
 import FacilityMap from "./hooks/facility_map"
 import ScrollToLatest from "./hooks/scroll_to_latest"
 import VoiceInput from "./hooks/voice_input"
+import ReadAloud from "./hooks/read_aloud"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, FacilityMap, ScrollToLatest, VoiceInput},
+  hooks: {...colocatedHooks, FacilityMap, ScrollToLatest, VoiceInput, ReadAloud},
 })
 
 // Show progress bar on live navigation and form submits

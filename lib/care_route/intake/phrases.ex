@@ -97,6 +97,9 @@ defmodule CareRoute.Intake.Phrases do
     try_again: %{"en" => "Try again", "sw" => "Jaribu tena"},
     call_now: %{"en" => "Call %{number}", "sw" => "Piga %{number}"},
     or: %{"en" => "or", "sw" => "au"},
+    # Reading questions aloud
+    read_aloud_on: %{"en" => "Read questions aloud", "sw" => "Soma maswali kwa sauti"},
+    read_aloud_off: %{"en" => "Stop reading aloud", "sw" => "Acha kusoma kwa sauti"},
     # Voice answers
     voice_start: %{"en" => "Answer by voice", "sw" => "Jibu kwa sauti"},
     voice_stop: %{"en" => "Stop listening", "sw" => "Acha kusikiliza"},
