@@ -99,6 +99,11 @@ defmodule CareRouteWeb.PatientLive.Intake do
       >
         <.warning_icon class="size-[15px] shrink-0 text-[#A23F26]" />
         <span class="text-[12.5px] text-[#7A2E1B]">{Phrases.t(:emergency_banner, @lang)}</span>
+        <.call_link
+          id="emergency-call"
+          label={Phrases.t(:call_now, @lang, number: Phrases.emergency_number())}
+          class="shrink-0 text-[12px] font-semibold text-white bg-[#A23F26] hover:bg-[#8A3420] px-2.5 py-1 rounded-md"
+        />
       </div>
 
       <%!-- Header --%>

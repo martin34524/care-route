@@ -194,6 +194,12 @@ defmodule CareRouteWeb.PatientLive.Results do
           </p>
 
           <div class="flex flex-wrap items-center gap-3.5">
+            <.call_link
+              :if={@rec.urgency_level == :urgent}
+              id="emergency-call"
+              label={Phrases.t(:call_now, @lang, number: Phrases.emergency_number())}
+              class="bg-[#A23F26] hover:bg-[#8A3420] text-white px-[22px] py-3 rounded-[10px] text-sm font-semibold"
+            />
             <a
               href="#facilities"
               class="bg-route hover:bg-route-dark text-white px-[22px] py-3 rounded-[10px] text-sm font-semibold inline-flex items-center gap-2"

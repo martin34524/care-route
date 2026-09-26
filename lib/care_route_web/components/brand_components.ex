@@ -83,6 +83,26 @@ defmodule CareRouteWeb.BrandComponents do
     """
   end
 
+  @doc "Tap-to-call link for the first configured emergency number."
+  attr :id, :string, default: nil
+  attr :label, :string, required: true
+  attr :class, :string, default: nil
+
+  def call_link(assigns) do
+    assigns = assign(assigns, :number, CareRoute.Intake.Phrases.emergency_number())
+
+    ~H"""
+    <a id={@id} href={"tel:#{@number}"} class={["inline-flex items-center gap-1.5", @class]}>
+      <.stroke_icon
+        class="size-[15px] shrink-0"
+        d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"
+        stroke_width="2"
+      />
+      {@label}
+    </a>
+    """
+  end
+
   @doc "White patient-page header: back button, logo, and a centered middle slot."
   attr :back, :string, required: true
   attr :back_label, :string, required: true

@@ -18,10 +18,10 @@ defmodule CareRoute.Intake.Phrases do
     urgent: %{
       "en" =>
         "Based on what you've shared, please seek urgent care now. " <>
-          "If this is an emergency, call your local emergency number.",
+          "If this is an emergency, call %{numbers} now.",
       "sw" =>
         "Kutokana na ulichoeleza, tafadhali tafuta huduma ya dharura sasa hivi. " <>
-          "Ikiwa ni dharura, piga simu kwa namba ya dharura ya eneo lako."
+          "Ikiwa ni dharura, piga simu %{numbers} sasa hivi."
     },
     ready: %{
       "en" => "Thanks — that’s everything I need. I have a recommendation ready for you.",
@@ -30,9 +30,8 @@ defmodule CareRoute.Intake.Phrases do
     },
     # Chat screen
     emergency_banner: %{
-      "en" => "If this feels like a medical emergency, call your local emergency number now.",
-      "sw" =>
-        "Ikiwa hii ni dharura ya kiafya, piga simu kwa namba ya dharura ya eneo lako sasa hivi."
+      "en" => "If this feels like a medical emergency, call %{numbers} now.",
+      "sw" => "Ikiwa hii ni dharura ya kiafya, piga simu %{numbers} sasa hivi."
     },
     progress: %{"en" => "Question %{n} of %{total}", "sw" => "Swali %{n} kati ya %{total}"},
     almost_done: %{"en" => "almost done", "sw" => "karibu kumaliza"},
@@ -56,12 +55,14 @@ defmodule CareRoute.Intake.Phrases do
     ai_unavailable: %{
       "en" =>
         "Sorry — I'm having trouble connecting right now. Tap Try again, or send your " <>
-          "answer again. If this is an emergency, call your local emergency number.",
+          "answer again. If this is an emergency, call %{numbers}.",
       "sw" =>
         "Samahani — nina tatizo la kuunganisha sasa hivi. Bonyeza Jaribu tena, au tuma " <>
-          "jibu lako tena. Ikiwa ni dharura, piga simu kwa namba ya dharura ya eneo lako."
+          "jibu lako tena. Ikiwa ni dharura, piga simu %{numbers}."
     },
     try_again: %{"en" => "Try again", "sw" => "Jaribu tena"},
+    call_now: %{"en" => "Call %{number}", "sw" => "Piga %{number}"},
+    or: %{"en" => "or", "sw" => "au"},
     # Voice answers
     voice_start: %{"en" => "Answer by voice", "sw" => "Jibu kwa sauti"},
     voice_stop: %{"en" => "Stop listening", "sw" => "Acha kusikiliza"},
@@ -130,10 +131,10 @@ defmodule CareRoute.Intake.Phrases do
     disclaimer: %{
       "en" =>
         "CareRoute AI does not diagnose medical conditions. If your symptoms worsen or you " <>
-          "believe this is an emergency, call your local emergency number immediately.",
+          "believe this is an emergency, call %{numbers} immediately.",
       "sw" =>
         "CareRoute AI haitambui magonjwa. Dalili zako zikizidi au ukiamini ni dharura, " <>
-          "piga simu kwa namba ya dharura ya eneo lako mara moja."
+          "piga simu %{numbers} mara moja."
     },
     type_clinic: %{"en" => "Clinic", "sw" => "Kliniki"},
     type_hospital: %{"en" => "Hospital", "sw" => "Hospitali"},
@@ -148,7 +149,25 @@ defmodule CareRoute.Intake.Phrases do
 
   def language_name(code), do: Map.get(@languages, code, "English")
 
-  def t(key, language), do: @phrases |> Map.fetch!(key) |> Map.get(language, @phrases[key]["en"])
+  @doc "The phrase in `language` (falling back to English), with emergency numbers filled in."
+  def t(key, language) do
+    text = @phrases |> Map.fetch!(key) |> Map.get(language, @phrases[key]["en"])
+
+    if String.contains?(text, "%{numbers}"),
+      do: String.replace(text, "%{numbers}", emergency_numbers_label(language)),
+      else: text
+  end
+
+  @doc "The configured emergency numbers, e.g. [\"999\", \"112\"]."
+  def emergency_numbers, do: Application.fetch_env!(:care_route, :emergency_numbers)
+
+  @doc "The number used for tap-to-call links."
+  def emergency_number, do: hd(emergency_numbers())
+
+  # "999 or 112" / "999 au 112"
+  defp emergency_numbers_label(language) do
+    Enum.join(emergency_numbers(), " #{t(:or, language)} ")
+  end
 
   @doc "Like `t/2`, replacing `%{name}` placeholders with `bindings`."
   def t(key, language, bindings) do

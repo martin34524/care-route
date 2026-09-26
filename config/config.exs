@@ -28,6 +28,9 @@ config :care_route, :anthropic,
 config :care_route, :gemini,
   models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
 
+# Emergency numbers shown to patients (Kenya), first one used for tap-to-call.
+config :care_route, :emergency_numbers, ["999", "112"]
+
 # Simulated patient position (Yaya Centre, Nairobi) used for facility distances
 # when the browser doesn't share a real location.
 config :care_route, :demo_origin, %{lat: -1.2925, lng: 36.7870}

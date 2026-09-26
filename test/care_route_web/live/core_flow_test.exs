@@ -48,6 +48,7 @@ defmodule CareRouteWeb.CoreFlowTest do
 
     assert has_element?(results, "#recommendation", "Clinic visit")
     assert has_element?(results, "#recommendation", "Moderate urgency")
+    refute has_element?(results, "#emergency-call")
 
     results |> element("#facility-#{clinic.id} button", "Request referral") |> render_click()
     assert has_element?(results, "#referral-sent", "Referral sent to Test Clinic")
@@ -103,7 +104,8 @@ defmodule CareRouteWeb.CoreFlowTest do
     assert render(view) =~ "Habari, mimi ni CareRoute"
     say(view, conversation, "Nina homa na ninashindwa kupumua, chest pain")
     assert render(view) =~ "tafuta huduma ya dharura"
-    assert render(view) =~ "Ikiwa hii ni dharura ya kiafya"
+    assert render(view) =~ "Ikiwa hii ni dharura ya kiafya, piga simu 999 au 112"
+    assert has_element?(view, "#emergency-call", "Piga 999")
     assert render(view) =~ "Ona pendekezo langu"
 
     # The whole results page is in Kiswahili too.
@@ -140,6 +142,8 @@ defmodule CareRouteWeb.CoreFlowTest do
 
     say(view, conversation, "Fever and she is having trouble breathing")
 
+    assert has_element?(view, ~s(#emergency-call[href="tel:999"]), "Call 999")
+    assert render(view) =~ "call 999 or 112 now"
     assert has_element?(view, "#message-form input[disabled]")
     assert has_element?(view, "header", "Urgent · please seek care now")
 
@@ -153,6 +157,8 @@ defmodule CareRouteWeb.CoreFlowTest do
 
     {:ok, results, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     assert has_element?(results, "#recommendation", "Urgent care")
+    assert has_element?(results, ~s(#emergency-call[href="tel:999"]), "Call 999")
+    assert render(results) =~ "call 999 or 112 immediately"
     assert has_element?(results, "#recommendation", "High urgency · seek care now")
     assert has_element?(results, "#recommendation", "Find urgent care near me")
     assert has_element?(results, "#facility-#{hospital.id}")
