@@ -109,7 +109,7 @@ defmodule CareRoute.Referrals do
   """
   def stats(opts \\ []) do
     base = filter_facility(Referral, opts[:facility_id])
-    today = DateTime.utc_now() |> DateTime.to_date() |> DateTime.new!(~T[00:00:00])
+    today = local_midnight(opts[:now] || DateTime.utc_now())
 
     avg_seconds =
       base
@@ -126,6 +126,17 @@ defmodule CareRoute.Referrals do
         |> select([r], count(r.patient_id, :distinct))
         |> Repo.one()
     }
+  end
+
+  @doc "The start of the local day containing `now`, as a UTC datetime."
+  def local_midnight(%DateTime{} = now) do
+    offset = Application.fetch_env!(:care_route, :utc_offset_seconds)
+
+    now
+    |> DateTime.add(offset)
+    |> DateTime.to_date()
+    |> DateTime.new!(~T[00:00:00])
+    |> DateTime.add(-offset)
   end
 
   defp to_float(%Decimal{} = d), do: Decimal.to_float(d)

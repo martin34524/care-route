@@ -30,6 +30,9 @@ config :care_route, :anthropic,
 config :care_route, :gemini,
   models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
 
+# Local time for "today" on the dashboards: Kenya is UTC+3 all year (no DST).
+config :care_route, :utc_offset_seconds, 3 * 60 * 60
+
 # Emergency numbers shown to patients (Kenya), first one used for tap-to-call.
 config :care_route, :emergency_numbers, ["999", "112"]
 

@@ -4,7 +4,17 @@ defmodule CareRoute.AI.IntakeStub do
   set. Returns the same JSON contract so the UI and routing can be built first.
   """
 
-  @red_flag_words ~w(breathing breathe chest unconscious seizure bleeding confused blue)
+  @red_flag_words ~w(breathing breathe chest unconscious seizure bleeding confused blue) ++
+                    [
+                      "kupumua",
+                      "kifua",
+                      "degedege",
+                      "kupoteza fahamu",
+                      "damu nyingi",
+                      "kuchanganyikiwa"
+                    ]
+  # "No difficulty…" style answers to the red-flag question aren't red flags.
+  @negations ["no difficulty", "no trouble", "hana shida", "hakuna shida", "sina shida"]
   @questions [
     "How long has this been going on?",
     "How severe would you say it is — mild, moderate, or severe?",
@@ -17,7 +27,7 @@ defmodule CareRoute.AI.IntakeStub do
     red_flags = Enum.filter(@red_flag_words, &String.contains?(text, &1))
     # Answers to "is there any difficulty breathing..." like "no" shouldn't count.
     red_flags =
-      if String.contains?(text, ["no difficulty", "no trouble"]), do: [], else: red_flags
+      if String.contains?(text, @negations), do: [], else: red_flags
 
     base = %{
       "extracted" => %{
