@@ -11,6 +11,8 @@ defmodule CareRoute.Intake do
   alias CareRoute.Intake.{Patient, Conversation, Phrases, SymptomReport}
   alias CareRoute.Workers.IntakeWorker
 
+  @network_topic "conversations"
+
   def topic(conversation_id), do: "conversation:#{conversation_id}"
 
   def subscribe(conversation_id) do
@@ -19,7 +21,11 @@ defmodule CareRoute.Intake do
 
   def broadcast(%Conversation{id: id} = conversation) do
     Phoenix.PubSub.broadcast(CareRoute.PubSub, topic(id), {:conversation_updated, conversation})
+    Phoenix.PubSub.broadcast(CareRoute.PubSub, @network_topic, :conversations_changed)
   end
+
+  @doc "Network-wide `:conversations_changed` notices (for the admin overview)."
+  def subscribe_network, do: Phoenix.PubSub.subscribe(CareRoute.PubSub, @network_topic)
 
   def create_patient(attrs \\ %{}) do
     %Patient{} |> Patient.changeset(attrs) |> Repo.insert()
@@ -35,6 +41,7 @@ defmodule CareRoute.Intake do
       transcript: [entry("assistant", Phrases.t(:greeting, language))]
     })
     |> Repo.insert()
+    |> tap_broadcast()
   end
 
   @doc "Looks up a conversation by the random token used in patient URLs."

@@ -14,9 +14,6 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
   @tick_ms 30_000
 
   @icons %{
-    referrals: "M4 4.5h16V16H9l-5 4.5z",
-    network: "M4 20V10 M10 20V4 M16 20v-7 M22 20H2",
-    back: "M15 18l-6-6 6-6",
     search: "M10.5 3a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15z M16 16l5.5 5.5"
   }
 
@@ -253,30 +250,7 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
 
     ~H"""
     <div class="min-h-screen flex bg-paper text-ink font-plex antialiased">
-      <%!-- Sidebar --%>
-      <nav
-        aria-label="Clinician navigation"
-        class="hidden lg:flex sticky top-0 h-screen w-[232px] shrink-0 bg-white border-r border-line px-3.5 py-5 flex-col gap-[3px]"
-      >
-        <div class="flex items-center gap-2 px-2.5 pt-1.5 pb-[22px]">
-          <.logo_icon class="size-[22px] text-route" />
-          <span class="font-display font-semibold text-[15px]">CareRoute</span>
-        </div>
-        <.link navigate={~p"/clinician?#{query(@viewer)}"} class={side_link(true)}>
-          <.stroke_icon class="size-[17px]" d={icon_path(:referrals)} stroke_width="1.8" /> Referrals
-        </.link>
-        <.link navigate={~p"/admin"} class={side_link(false)}>
-          <.stroke_icon class="size-[17px]" d={icon_path(:network)} stroke_width="1.8" />
-          Network overview
-        </.link>
-        <div class="grow"></div>
-        <.link
-          navigate={~p"/"}
-          class={[side_link(false), "border-t border-[#EEF1EF] mt-2 !pt-3.5 rounded-t-none"]}
-        >
-          <.stroke_icon class="size-[17px]" d={icon_path(:back)} stroke_width="1.8" /> Back to site
-        </.link>
-      </nav>
+      <.staff_sidebar active={:referrals} referrals_path={~p"/clinician?#{query(@viewer)}"} />
 
       <%!-- Main --%>
       <main class="grow min-w-0 flex flex-col">
@@ -487,16 +461,6 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
       <Layouts.flash_group flash={@flash} />
     </div>
     """
-  end
-
-  defp side_link(active?) do
-    [
-      "flex items-center gap-[11px] px-[13px] py-[9px] rounded-[9px] text-[13.5px]",
-      if(active?,
-        do: "bg-route-soft text-route-deep font-semibold",
-        else: "text-[#5C665F] font-medium hover:bg-[#EAF1EE] hover:text-ink"
-      )
-    ]
   end
 
   attr :id, :string, required: true

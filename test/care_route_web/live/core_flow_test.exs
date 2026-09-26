@@ -129,8 +129,16 @@ defmodule CareRouteWeb.CoreFlowTest do
     {:ok, results, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     results |> element("#facility-#{hospital.id} button") |> render_click()
 
-    assert has_element?(admin, "#stat-urgent", "1")
-    assert has_element?(admin, "#facility-load", "Test Hospital")
+    assert has_element?(admin, "#level-urgent", "1")
+    assert has_element?(admin, "#level-urgent", "100%")
+    assert has_element?(admin, "#load-chart", "Test Hospital")
+    assert has_element?(admin, "#load-#{hospital.id}", "1 total · 1 waiting")
+    assert has_element?(admin, "#stat-waiting", "1")
+
+    # A new patient starting intake shows up live, without polling.
+    {:ok, patient} = Intake.create_patient(%{age: 40})
+    {:ok, _} = Intake.start_conversation(patient)
+    assert has_element?(admin, "#stat-in-progress", "1")
   end
 
   test "red flag short-circuits to the urgent pathway", %{

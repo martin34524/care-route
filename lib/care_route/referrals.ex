@@ -151,6 +151,7 @@ defmodule CareRoute.Referrals do
         group_by: [f.id, f.name, f.type],
         order_by: [desc: count(r.id), asc: f.name],
         select: %{
+          id: f.id,
           facility: f.name,
           type: f.type,
           pending: filter(count(r.id), r.status == :pending),

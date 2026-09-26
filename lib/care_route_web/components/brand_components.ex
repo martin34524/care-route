@@ -129,6 +129,48 @@ defmodule CareRouteWeb.BrandComponents do
     """
   end
 
+  @doc "Left navigation shared by the clinician and admin pages (hidden on small screens)."
+  attr :active, :atom, required: true, values: [:referrals, :network]
+  attr :referrals_path, :string, default: "/clinician"
+
+  def staff_sidebar(assigns) do
+    ~H"""
+    <nav
+      aria-label="Staff navigation"
+      class="hidden lg:flex sticky top-0 h-screen w-[232px] shrink-0 bg-white border-r border-line px-3.5 py-5 flex-col gap-[3px]"
+    >
+      <div class="flex items-center gap-2 px-2.5 pt-1.5 pb-[22px]">
+        <.logo_icon class="size-[22px] text-route" />
+        <span class="font-display font-semibold text-[15px]">CareRoute</span>
+      </div>
+      <.link navigate={@referrals_path} class={side_link(@active == :referrals)}>
+        <.stroke_icon class="size-[17px]" d="M4 4.5h16V16H9l-5 4.5z" stroke_width="1.8" /> Referrals
+      </.link>
+      <.link navigate="/admin" class={side_link(@active == :network)}>
+        <.stroke_icon class="size-[17px]" d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2" stroke_width="1.8" />
+        Network overview
+      </.link>
+      <div class="grow"></div>
+      <.link
+        navigate="/"
+        class={[side_link(false), "border-t border-[#EEF1EF] mt-2 !pt-3.5 rounded-t-none"]}
+      >
+        <.stroke_icon class="size-[17px]" d="M15 18l-6-6 6-6" stroke_width="1.8" /> Back to site
+      </.link>
+    </nav>
+    """
+  end
+
+  defp side_link(active?) do
+    [
+      "flex items-center gap-[11px] px-[13px] py-[9px] rounded-[9px] text-[13.5px]",
+      if(active?,
+        do: "bg-route-soft text-route-deep font-semibold",
+        else: "text-[#5C665F] font-medium hover:bg-[#EAF1EE] hover:text-ink"
+      )
+    ]
+  end
+
   @doc "Header button that starts a fresh intake."
   attr :label, :string, required: true
 
