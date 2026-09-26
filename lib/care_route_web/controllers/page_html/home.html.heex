@@ -1,0 +1,300 @@
+<div class="min-h-screen bg-paper text-ink font-plex antialiased">
+  <%!-- ===== NAV ===== --%>
+  <header class="flex items-center justify-between gap-4 px-4 sm:px-8 lg:px-16 py-5 border-b border-line">
+    <.link href={~p"/"} class="flex items-center gap-2.5">
+      <svg
+        width="30"
+        height="30"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="text-route"
+        aria-hidden="true"
+      >
+        <circle cx="6" cy="18" r="2.4"></circle>
+        <circle cx="18" cy="6" r="2.4"></circle>
+        <path d="M8.1 16.5 15 8.7" stroke-dasharray="2 3"></path>
+        <circle cx="17" cy="17" r="1.2" fill="currentColor" stroke="none"></circle>
+      </svg>
+      <span class="font-display font-semibold text-[19px] tracking-[-0.2px]">
+        CareRoute <span class="text-route">AI</span>
+      </span>
+    </.link>
+    <nav aria-label="Primary" class="hidden md:flex items-center gap-[30px]">
+      <a href="#how" class="text-ink-muted hover:text-ink text-sm font-medium px-1 py-2">
+        How it works
+      </a>
+      <.link
+        navigate={~p"/clinician"}
+        class="text-ink-muted hover:text-ink text-sm font-medium px-1 py-2"
+      >
+        For clinicians
+      </.link>
+      <a href="#safety" class="text-ink-muted hover:text-ink text-sm font-medium px-1 py-2">
+        Safety
+      </a>
+    </nav>
+    <.link
+      navigate={~p"/start"}
+      class="bg-route hover:bg-route-dark text-white px-5 py-2.5 rounded-[10px] text-sm font-semibold"
+    >
+      Start now
+    </.link>
+  </header>
+
+  <%!-- ===== HERO ===== --%>
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_0.85fr] gap-10 lg:gap-14 items-center px-4 sm:px-8 lg:px-16 pt-12 lg:pt-[76px] pb-16 lg:pb-[88px] max-w-[1312px] mx-auto">
+    <div>
+      <div class="inline-flex items-center gap-[7px] px-[13px] py-1.5 rounded-full bg-route-soft text-route-deep text-[12.5px] font-semibold mb-[22px]">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 3 4 6.5v5c0 5 3.4 8.9 8 10 4.6-1.1 8-5 8-10v-5z"></path>
+        </svg>
+        AI care navigator — not a diagnosis
+      </div>
+      <h1 class="font-display font-semibold text-[38px] sm:text-[52px] leading-[1.08] tracking-[-0.5px] mb-[22px]">
+        Find the right care, right away.
+      </h1>
+      <p class="text-[16.5px] leading-[1.6] text-ink-muted max-w-[460px] mb-[30px]">
+        Tell CareRoute what’s going on. A few adaptive questions later, you’ll know whether you can
+        care for it at home, should visit a clinic, or need urgent care — and which nearby
+        facilities can see you.
+      </p>
+      <div class="flex flex-wrap items-center gap-4 mb-[26px]">
+        <.link
+          navigate={~p"/start"}
+          class="bg-route hover:bg-route-dark text-white px-6 py-[13px] rounded-[11px] text-[15px] font-semibold inline-flex items-center gap-2"
+        >
+          Describe what’s going on <.arrow_icon class="size-4" />
+        </.link>
+        <a
+          href="#how"
+          class="text-ink-muted hover:text-ink hover:bg-[#EAF1EE] text-sm font-medium px-3.5 py-[13px] rounded-[11px]"
+        >
+          See how it works
+        </a>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-[#6B756F]">
+        <span
+          :for={label <- ["Free to use", "No appointment needed", "Available 24/7"]}
+          class="flex items-center gap-1.5"
+        >
+          <.check_icon class="size-[13px] text-route" />{label}
+        </span>
+      </div>
+    </div>
+
+    <div class="bg-route-soft rounded-3xl p-10 flex items-center justify-center min-h-[300px] lg:min-h-[380px] text-route">
+      <svg viewBox="0 0 320 320" class="w-full h-full max-w-[320px]" aria-hidden="true">
+        <circle cx="80" cy="250" r="9" fill="#FFFFFF" stroke="currentColor" stroke-width="2.5">
+        </circle>
+        <path
+          d="M80 250 C 130 210, 150 180, 175 150"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-dasharray="3 6"
+          opacity="0.6"
+        >
+        </path>
+        <circle cx="175" cy="150" r="7" fill="currentColor"></circle>
+        <path
+          d="M175 150 C 195 120, 210 100, 245 75"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-dasharray="3 6"
+          opacity="0.6"
+        >
+        </path>
+        <circle cx="245" cy="75" r="11" fill="#FFFFFF" stroke="currentColor" stroke-width="3">
+        </circle>
+        <path
+          d="M245 68v14M238 75h14"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+        >
+        </path>
+        <circle
+          cx="245"
+          cy="75"
+          r="34"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          opacity="0.35"
+        >
+        </circle>
+        <circle
+          cx="245"
+          cy="75"
+          r="52"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1"
+          opacity="0.2"
+        >
+        </circle>
+        <circle
+          cx="80"
+          cy="250"
+          r="34"
+          fill="none"
+          stroke="#175650"
+          stroke-width="1.2"
+          opacity="0.25"
+        >
+        </circle>
+      </svg>
+    </div>
+  </section>
+
+  <%!-- ===== HOW IT WORKS ===== --%>
+  <section
+    id="how"
+    class="px-4 sm:px-8 lg:px-16 pt-5 pb-16 lg:pb-[88px] max-w-[1312px] mx-auto scroll-mt-6"
+  >
+    <div class="text-center mb-11">
+      <div class="text-[12.5px] font-semibold tracking-[0.06em] uppercase text-route mb-2.5">
+        How CareRoute works
+      </div>
+      <h2 class="font-display font-semibold text-[26px] sm:text-[30px]">
+        Three minutes to the right door
+      </h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div
+        :for={step <- steps()}
+        class="bg-white border border-line rounded-2xl px-6 py-7 transition-[box-shadow,border-color] duration-150 hover:border-[#CFDAD5] hover:shadow-[0_3px_14px_rgba(22,32,30,0.06)]"
+      >
+        <div class="flex items-center gap-3 mb-[18px]">
+          <div class="size-9 rounded-[10px] bg-route-soft flex items-center justify-center text-route">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d={step.icon}></path>
+            </svg>
+          </div>
+          <div class="font-display text-[13px] font-semibold text-[#A9B3AD]">Step {step.n}</div>
+        </div>
+        <div class="text-base font-semibold mb-2">{step.title}</div>
+        <div class="text-[13.5px] leading-[1.55] text-[#63706A]">{step.body}</div>
+      </div>
+    </div>
+  </section>
+
+  <%!-- ===== FOR CLINICIANS ===== --%>
+  <section class="px-4 sm:px-8 lg:px-16 pt-5 pb-16 lg:pb-[90px] max-w-[1312px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-[60px] items-center">
+    <div>
+      <div class="text-[12.5px] font-semibold tracking-[0.06em] uppercase text-route mb-2.5">
+        For clinicians
+      </div>
+      <h2 class="font-display font-semibold text-[28px] leading-[1.2] mb-4">
+        Structured referrals, not guesswork
+      </h2>
+      <p class="text-[14.5px] leading-[1.6] text-ink-muted mb-[22px]">
+        Every referral arrives with the full adaptive intake, a plain-language rationale, and a
+        suggested urgency level — so you can triage in seconds, not minutes.
+      </p>
+      <div class="flex flex-col gap-3.5 mb-[26px]">
+        <div :for={point <- clinician_points()} class="flex items-start gap-[11px]">
+          <.check_icon class="size-[17px] shrink-0 mt-px text-route" />
+          <span class="text-sm text-[#333E37]">{point}</span>
+        </div>
+      </div>
+      <.link
+        navigate={~p"/clinician"}
+        class="bg-route hover:bg-route-dark text-white px-[22px] py-3 rounded-[10px] text-[14.5px] font-semibold inline-flex items-center gap-2"
+      >
+        See the clinician view <.arrow_icon class="size-[15px]" />
+      </.link>
+    </div>
+
+    <div
+      class="bg-white border border-line rounded-[18px] p-[18px] shadow-[0_10px_34px_rgba(22,32,30,0.07)]"
+      aria-label="Example referral queue"
+    >
+      <div class="flex items-center gap-[7px] pb-3 border-b border-[#EEF1EF] mb-3.5">
+        <span :for={_ <- 1..3} class="size-[9px] rounded-full bg-[#E3E7E4]"></span>
+        <span class="text-[11.5px] text-[#A9B3AD] ml-2">Referral queue</span>
+      </div>
+      <div class="flex flex-col gap-[9px]">
+        <div
+          :for={row <- preview_rows()}
+          class="flex items-center justify-between px-3 py-[11px] rounded-[10px] bg-paper"
+        >
+          <div>
+            <div class="text-[12.5px] font-semibold text-ink">{row.patient}</div>
+            <div class="text-[11.5px] text-[#8B958F] mt-0.5">{row.complaint}</div>
+          </div>
+          <span
+            class="text-[10.5px] font-semibold px-[9px] py-1 rounded-full"
+            style={"background: #{row.bg}; color: #{row.fg};"}
+          >
+            {row.level}
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <%!-- ===== SAFETY / FOOTER ===== --%>
+  <footer id="safety" class="px-4 sm:px-8 lg:px-16 pb-14 max-w-[1312px] mx-auto scroll-mt-6">
+    <div class="flex gap-3.5 px-[22px] py-5 rounded-[14px] bg-[#FBF3EA] border border-[#F0DCC3] mb-10">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#9A6B1F"
+        stroke-width="1.9"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="shrink-0 mt-px"
+        aria-hidden="true"
+      >
+        <path d="M12 3 4 6.5v5c0 5 3.4 8.9 8 10 4.6-1.1 8-5 8-10v-5z M12 8v5 M12 16h.01"></path>
+      </svg>
+      <div class="text-[13px] leading-[1.6] text-[#6B4E1C]">
+        <strong class="text-[#4A3512]">CareRoute AI is a care navigator, not a diagnostic tool.</strong>
+        It helps you find the right level of care based on what you tell it — it does not diagnose
+        medical conditions or replace a clinician. If this may be a medical emergency, call your
+        local emergency number immediately.
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-4 sm:items-center justify-between pt-6 border-t border-line">
+      <div class="text-[12.5px] text-[#8B958F]">© 2026 CareRoute AI. Built for DSH Hacks V2.</div>
+      <div class="flex gap-6">
+        <a
+          :for={label <- ["Privacy", "Terms", "Contact"]}
+          href="#safety"
+          class="text-[12.5px] text-[#6B756F] hover:text-ink"
+        >
+          {label}
+        </a>
+      </div>
+    </div>
+  </footer>
+</div>

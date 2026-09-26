@@ -86,6 +86,7 @@ defmodule CareRouteWeb do
       import Phoenix.HTML
       # Core UI components
       import CareRouteWeb.CoreComponents
+      import CareRouteWeb.BrandComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

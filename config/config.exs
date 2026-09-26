@@ -28,6 +28,10 @@ config :care_route, :anthropic,
 config :care_route, :gemini,
   models: ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
 
+# Simulated patient position (Yaya Centre, Nairobi) used for facility distances
+# when the browser doesn't share a real location.
+config :care_route, :demo_origin, %{lat: -1.2925, lng: 36.7870}
+
 # Configure the endpoint
 config :care_route, CareRouteWeb.Endpoint,
   url: [host: "localhost"],

@@ -6,8 +6,8 @@ defmodule CareRoute.Workers.IntakeWorker do
 
   use Oban.Worker, queue: :ai, max_attempts: 3
 
-  alias CareRoute.{Intake, Routing}
-  alias CareRoute.AI.{Claude, Gemini, IntakePrompt, IntakeStub}
+  alias CareRoute.{AI, Intake, Routing}
+  alias CareRoute.AI.{IntakePrompt, IntakeStub}
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"conversation_id" => id}}) do
@@ -15,7 +15,7 @@ defmodule CareRoute.Workers.IntakeWorker do
 
     # A later job may already have moved the conversation on.
     if conversation.status == :gathering do
-      with {:ok, result} <- extract(conversation.transcript),
+      with {:ok, result} <- extract(conversation),
            {:ok, _conversation} <- Routing.apply_extraction(conversation, result) do
         :ok
       end
@@ -24,20 +24,12 @@ defmodule CareRoute.Workers.IntakeWorker do
     end
   end
 
-  # Provider order: Gemini, then Claude, then the offline stub.
-  defp extract(transcript) do
-    system = IntakePrompt.system()
-    messages = IntakePrompt.messages(transcript)
-
-    cond do
-      Gemini.configured?() ->
-        Gemini.generate_json(system, messages, IntakePrompt.tool()["input_schema"])
-
-      Claude.configured?() ->
-        Claude.call_tool(system, messages, IntakePrompt.tool())
-
-      true ->
-        {:ok, IntakeStub.extract(transcript)}
-    end
+  defp extract(%{transcript: transcript, patient: patient}) do
+    AI.generate(
+      IntakePrompt.system(patient.preferred_language),
+      IntakePrompt.messages(transcript),
+      IntakePrompt.tool(),
+      fn -> IntakeStub.extract(transcript) end
+    )
   end
 end

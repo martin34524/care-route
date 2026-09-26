@@ -11,11 +11,8 @@ defmodule CareRoute.Routing do
   """
 
   alias CareRoute.{Intake, Repo}
-  alias CareRoute.Intake.Conversation
+  alias CareRoute.Intake.{Conversation, Phrases}
   alias CareRoute.Routing.CareRecommendation
-
-  @urgent_message "Based on what you've shared, please seek urgent care now. " <>
-                    "If this is an emergency, call your local emergency number."
 
   def apply_extraction(%Conversation{} = conversation, %{"extracted" => extracted} = result) do
     {:ok, _report} =
@@ -47,10 +44,15 @@ defmodule CareRoute.Routing do
     with {:ok, _rec} <-
            create_recommendation(conversation, %{
              urgency_level: :urgent,
-             reasoning: Map.get(result, "reasoning", []),
+             reasoning: get_in(result, ["recommendation", "reasoning"]) || [],
              warning_signs: get_in(result, ["extracted", "red_flags"]) || []
            }),
-         {:ok, conversation} <- Intake.append_message(conversation, "assistant", @urgent_message) do
+         {:ok, conversation} <-
+           Intake.append_message(
+             conversation,
+             "assistant",
+             Phrases.t(:urgent, language(conversation))
+           ) do
       Intake.update_status(conversation, :urgent)
     end
   end
@@ -68,11 +70,14 @@ defmodule CareRoute.Routing do
            Intake.append_message(
              conversation,
              "assistant",
-             "Thanks, I have enough to suggest a next step."
+             Phrases.t(:ready, language(conversation))
            ) do
       Intake.update_status(conversation, :assessed)
     end
   end
+
+  defp language(%Conversation{patient: %{preferred_language: language}}), do: language
+  defp language(%Conversation{}), do: "en"
 
   def create_recommendation(%Conversation{id: conversation_id}, attrs) do
     %CareRecommendation{}
@@ -81,5 +86,17 @@ defmodule CareRoute.Routing do
       on_conflict: {:replace_all_except, [:id, :conversation_id, :inserted_at]},
       conflict_target: :conversation_id
     )
+  end
+
+  @doc "Recommendation counts keyed by urgency level."
+  def count_by_urgency do
+    import Ecto.Query
+
+    Repo.all(
+      from r in CareRecommendation,
+        group_by: r.urgency_level,
+        select: {r.urgency_level, count(r.id)}
+    )
+    |> Map.new()
   end
 end

@@ -8,6 +8,7 @@ defmodule CareRoute.Referrals.Referral do
     field :reason, :string
     field :ai_summary, :string
     field :status, Ecto.Enum, values: @statuses, default: :pending
+    field :responded_at, :utc_datetime
 
     belongs_to :patient, CareRoute.Intake.Patient
     belongs_to :conversation, CareRoute.Intake.Conversation
@@ -26,7 +27,8 @@ defmodule CareRoute.Referrals.Referral do
       :to_facility_id,
       :reason,
       :ai_summary,
-      :status
+      :status,
+      :responded_at
     ])
     |> validate_required([:patient_id, :to_facility_id])
     |> foreign_key_constraint(:patient_id)

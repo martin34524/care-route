@@ -2,6 +2,7 @@ defmodule CareRouteWeb.PatientLive.Start do
   use CareRouteWeb, :live_view
 
   alias CareRoute.Intake
+  alias CareRoute.Intake.Phrases
 
   @impl true
   def mount(_params, _session, socket) do
@@ -38,7 +39,7 @@ defmodule CareRouteWeb.PatientLive.Start do
           field={@form[:preferred_language]}
           type="select"
           label="Language"
-          options={[{"English", "en"}, {"Kiswahili", "sw"}]}
+          options={Enum.map(Phrases.languages(), fn {code, name} -> {name, code} end)}
         />
         <.button variant="primary" class="w-full">Start</.button>
       </.form>

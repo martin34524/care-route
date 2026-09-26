@@ -44,6 +44,7 @@ defmodule CareRouteWeb.Layouts do
       <div class="flex-none">
         <ul class="flex flex-column px-1 space-x-4 items-center">
           <li><.link navigate={~p"/clinician"} class="btn btn-ghost">Clinician</.link></li>
+          <li><.link navigate={~p"/admin"} class="btn btn-ghost">Admin</.link></li>
           <li><.theme_toggle /></li>
         </ul>
       </div>

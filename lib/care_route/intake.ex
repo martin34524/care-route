@@ -8,11 +8,8 @@ defmodule CareRoute.Intake do
   """
 
   alias CareRoute.Repo
-  alias CareRoute.Intake.{Patient, Conversation, SymptomReport}
+  alias CareRoute.Intake.{Patient, Conversation, Phrases, SymptomReport}
   alias CareRoute.Workers.IntakeWorker
-
-  @greeting "Hi, I'm CareRoute. I can help you figure out where to go for care. " <>
-              "I'm not a doctor and can't diagnose, but tell me what's going on in your own words."
 
   def topic(conversation_id), do: "conversation:#{conversation_id}"
 
@@ -30,12 +27,12 @@ defmodule CareRoute.Intake do
 
   def get_patient!(id), do: Repo.get!(Patient, id)
 
-  @doc "Starts a new conversation for a patient, seeded with the assistant greeting."
-  def start_conversation(%Patient{id: patient_id}) do
+  @doc "Starts a new conversation for a patient, seeded with a greeting in their language."
+  def start_conversation(%Patient{id: patient_id, preferred_language: language}) do
     %Conversation{}
     |> Conversation.changeset(%{
       patient_id: patient_id,
-      transcript: [entry("assistant", @greeting)]
+      transcript: [entry("assistant", Phrases.t(:greeting, language))]
     })
     |> Repo.insert()
   end
@@ -49,22 +46,31 @@ defmodule CareRoute.Intake do
   @doc """
   Records a patient message and enqueues the AI extraction job.
   Messages are ignored once the conversation has left the gathering state.
+
+  Pass `via: :voice` for answers transcribed from speech; the transcript
+  keeps that so clinicians know the text came from speech recognition.
   """
-  def submit_patient_message(%Conversation{status: :gathering} = conversation, content) do
+  def submit_patient_message(conversation, content, opts \\ [])
+
+  def submit_patient_message(%Conversation{status: :gathering} = conversation, content, opts) do
     content = String.trim(content)
+    extra = if opts[:via] == :voice, do: %{"via" => "voice"}, else: %{}
 
     with true <- content != "" || {:error, :empty},
-         {:ok, conversation} <- append_message(conversation, "patient", content),
+         {:ok, conversation} <- append_message(conversation, "patient", content, extra),
          {:ok, _job} <- Oban.insert(IntakeWorker.new(%{conversation_id: conversation.id})) do
       {:ok, conversation}
     end
   end
 
-  def submit_patient_message(%Conversation{}, _content), do: {:error, :conversation_closed}
+  def submit_patient_message(%Conversation{}, _content, _opts),
+    do: {:error, :conversation_closed}
 
-  def append_message(%Conversation{} = conversation, role, content) do
+  def append_message(%Conversation{} = conversation, role, content, extra \\ %{}) do
+    entry = Map.merge(entry(role, content), extra)
+
     conversation
-    |> Conversation.changeset(%{transcript: conversation.transcript ++ [entry(role, content)]})
+    |> Conversation.changeset(%{transcript: conversation.transcript ++ [entry]})
     |> Repo.update()
     |> tap_broadcast()
   end
@@ -96,4 +102,12 @@ defmodule CareRoute.Intake do
   end
 
   defp tap_broadcast(error), do: error
+
+  @doc "Conversation counts keyed by status, e.g. `%{gathering: 2, urgent: 1}`."
+  def count_conversations_by_status do
+    import Ecto.Query
+
+    Repo.all(from c in Conversation, group_by: c.status, select: {c.status, count(c.id)})
+    |> Map.new()
+  end
 end

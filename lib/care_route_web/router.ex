@@ -17,11 +17,16 @@ defmodule CareRouteWeb.Router do
   scope "/", CareRouteWeb do
     pipe_through :browser
 
-    live "/", PatientLive.Start
-    live "/intake/:id", PatientLive.Intake
+    get "/", PageController, :home
 
-    live "/clinician", ClinicianLive.Index
-    live "/clinician/referrals/:id", ClinicianLive.Show
+    live "/start", PatientLive.Start
+    live "/intake/:id", PatientLive.Intake
+    live "/intake/:id/results", PatientLive.Results
+
+    live "/clinician", ClinicianLive.Dashboard, :index
+    live "/clinician/referrals/:id", ClinicianLive.Dashboard, :show
+
+    live "/admin", AdminLive.Dashboard
   end
 
   # Other scopes may use custom stacks.

@@ -20,6 +20,44 @@ defmodule CareRoute.Facilities do
     Repo.all(from f in Facility, where: f.type in ^types, order_by: [asc: f.distance_km])
   end
 
+  @earth_radius_km 6371.0
+  # A patient further than this from every facility is outside the simulated
+  # network, so their real position isn't used for distances.
+  @max_origin_km 100
+
+  @doc "The simulated patient position used until the browser shares a real one."
+  def demo_origin, do: Application.fetch_env!(:care_route, :demo_origin)
+
+  @doc """
+  Recomputes `distance_km` from `origin` (`%{lat: _, lng: _}`) and sorts nearest
+  first. Returns `:out_of_area` when the origin is far from every facility.
+  """
+  def with_distances(facilities, %{lat: lat, lng: lng} = origin)
+      when is_number(lat) and is_number(lng) do
+    facilities =
+      facilities
+      |> Enum.map(fn f ->
+        if f.latitude, do: %{f | distance_km: Float.round(haversine_km(origin, f), 1)}, else: f
+      end)
+      |> Enum.sort_by(&(&1.distance_km || :infinity))
+
+    if Enum.any?(facilities, &(&1.distance_km && &1.distance_km <= @max_origin_km)),
+      do: {:ok, facilities},
+      else: :out_of_area
+  end
+
+  defp haversine_km(%{lat: lat1, lng: lng1}, %Facility{latitude: lat2, longitude: lng2}) do
+    to_rad = &(&1 * :math.pi() / 180)
+    dlat = to_rad.(lat2 - lat1)
+    dlng = to_rad.(lng2 - lng1)
+
+    a =
+      :math.pow(:math.sin(dlat / 2), 2) +
+        :math.cos(to_rad.(lat1)) * :math.cos(to_rad.(lat2)) * :math.pow(:math.sin(dlng / 2), 2)
+
+    2 * @earth_radius_km * :math.asin(:math.sqrt(a))
+  end
+
   def get_facility!(id), do: Repo.get!(Facility, id)
 
   def create_facility(attrs) do

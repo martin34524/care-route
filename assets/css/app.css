@@ -2,12 +2,27 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
+@import "../vendor/leaflet/leaflet.css";
 @import "phoenix-colocated/care_route/colocated.css";
 @source "../css";
 @source "../js";
 @source "../../lib/care_route_web";
 /* Required for Tailwind to automatically pick up changes in colocated CSS files in dev */
 @source "../../_build/dev/phoenix-colocated/care_route/*/";
+
+/* CareRoute brand tokens (from the landing page design reference) */
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-plex: "IBM Plex Sans", system-ui, sans-serif;
+  --color-route: #1d6b64;
+  --color-route-dark: #164f4a;
+  --color-route-soft: #e4f1ee;
+  --color-route-deep: #175650;
+  --color-paper: #f6f8f6;
+  --color-ink: #16201e;
+  --color-ink-muted: #4b564f;
+  --color-line: #e5eae6;
+}
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
@@ -103,3 +118,21 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* Numbered facility markers on the patient map (see assets/js/hooks/facility_map.js) */
+.map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+}
+.map-pin-clinic { background: var(--color-warning); color: var(--color-warning-content); }
+.map-pin-hospital { background: var(--color-error); color: var(--color-error-content); }
+.map-pin-specialist { background: var(--color-secondary); color: var(--color-secondary-content); }
