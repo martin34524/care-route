@@ -95,6 +95,11 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
     end
   end
 
+  def handle_event("regenerate-summary", _params, socket) do
+    {:ok, referral} = Referrals.regenerate_summary(socket.assigns.selected)
+    {:noreply, assign(socket, selected: referral)}
+  end
+
   def handle_event("reassign", %{"facility_id" => facility_id}, socket) do
     %{selected: selected} = socket.assigns
 
@@ -507,7 +512,17 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
         </span>
       </div>
 
-      <.section_label>AI handoff summary</.section_label>
+      <div class="flex items-center justify-between gap-3">
+        <.section_label>AI handoff summary</.section_label>
+        <button
+          :if={@referral.ai_summary}
+          id="regenerate-summary"
+          phx-click="regenerate-summary"
+          class="-mt-2.5 text-[11.5px] font-semibold text-route hover:text-route-dark"
+        >
+          Regenerate
+        </button>
+      </div>
       <pre
         :if={@referral.ai_summary}
         id="ai-summary"

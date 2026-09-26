@@ -80,14 +80,29 @@ defmodule CareRoute.Referrals do
   end
 
   @doc "Clears a failed AI summary and queues a new attempt."
-  def retry_summary(%Referral{ai_summary: nil} = referral) do
-    with {:ok, referral} <- update_referral(referral, %{summary_failed_at: nil}),
-         {:ok, _job} <- Oban.insert(HandoffWorker.new(%{referral_id: referral.id})) do
-      {:ok, referral}
+  def retry_summary(%Referral{ai_summary: nil} = referral), do: regenerate_summary(referral)
+  def retry_summary(%Referral{}), do: {:error, :already_summarized}
+
+  @doc "Discards the current AI summary (if any) and queues a fresh one."
+  def regenerate_summary(%Referral{} = referral) do
+    multi =
+      Ecto.Multi.new()
+      |> Ecto.Multi.update(
+        :referral,
+        Referral.changeset(referral, %{ai_summary: nil, summary_failed_at: nil})
+      )
+      |> Oban.insert(:job, HandoffWorker.new(%{referral_id: referral.id}))
+
+    case Repo.transaction(multi) do
+      {:ok, %{referral: referral}} ->
+        referral = Repo.preload(referral, @preloads, force: true)
+        Phoenix.PubSub.broadcast(CareRoute.PubSub, @topic, {:referral_updated, referral})
+        {:ok, referral}
+
+      {:error, _step, reason, _changes} ->
+        {:error, reason}
     end
   end
-
-  def retry_summary(%Referral{}), do: {:error, :already_summarized}
 
   @doc "Sends a referral to a different facility; it goes back to pending there."
   def reassign_referral(%Referral{} = referral, facility_id) do

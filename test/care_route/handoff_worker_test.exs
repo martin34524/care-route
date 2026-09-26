@@ -60,4 +60,20 @@ defmodule CareRoute.HandoffWorkerTest do
     assert has_element?(view, "#ai-summary", "CC:")
     refute has_element?(view, "#summary-failed")
   end
+
+  test "a clinician can regenerate an existing summary", %{conn: conn, referral: r} do
+    assert :ok = run(r)
+    {:ok, view, _} = live(conn, ~p"/clinician/referrals/#{r.id}")
+    assert has_element?(view, "#ai-summary")
+
+    Oban.cancel_all_jobs(where(Oban.Job, worker: "CareRoute.Workers.HandoffWorker"))
+    view |> element("#regenerate-summary") |> render_click()
+
+    assert render(view) =~ "Generating summary"
+    refute has_element?(view, "#ai-summary")
+    assert_enqueued(worker: HandoffWorker, args: %{referral_id: r.id})
+
+    assert :ok = run(r)
+    assert has_element?(view, "#ai-summary", "CC:")
+  end
 end
