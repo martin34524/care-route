@@ -24,9 +24,11 @@ defmodule CareRoute.Workers.IntakeWorker do
     end
   end
 
-  defp extract(%{transcript: transcript, patient: patient}) do
+  defp extract(%{transcript: transcript, patient: patient} = conversation) do
+    final = Routing.question_limit_reached?(conversation)
+
     AI.generate(
-      IntakePrompt.system(patient.preferred_language),
+      IntakePrompt.system(patient.preferred_language, final: final),
       IntakePrompt.messages(transcript),
       IntakePrompt.tool(),
       fn -> IntakeStub.extract(transcript) end

@@ -3,7 +3,11 @@ defmodule CareRoute.AI.IntakePrompt do
   System prompt and tool schema for call site #1: conversational intake/extraction.
   """
 
-  def system(language \\ "en") do
+  @doc """
+  The intake system prompt. `final: true` is used once the patient has answered
+  as many questions as intake allows; the model must then decide.
+  """
+  def system(language \\ "en", opts \\ []) do
     """
     You are CareRoute, a healthcare navigation assistant. You help a patient decide
     WHERE to seek care (self-care at home, a clinic visit, or urgent care). You do
@@ -18,7 +22,8 @@ defmodule CareRoute.AI.IntakePrompt do
       - "ask_question" if you need more information; put ONE short, plain-language
         question in next_question.
       - "ready_for_recommendation" once you know the main symptoms, duration, severity,
-        and have checked for red flags (usually 2-4 questions); fill recommendation.
+        and have checked for red flags (usually 2-4 questions, never more than 5);
+        fill recommendation.
     - recommendation: null unless next_action is "ready_for_recommendation". Reasoning
       and warning_signs should be short patient-facing sentences about when to seek
       more urgent care, not diagnoses.
@@ -30,6 +35,17 @@ defmodule CareRoute.AI.IntakePrompt do
     Some answers are dictated and transcribed by speech recognition, so they may
     contain misheard words. If an answer seems garbled or contradictory, ask the
     patient to clarify rather than guessing.
+    #{if opts[:final], do: final_turn()}\
+    """
+  end
+
+  defp final_turn do
+    """
+
+    The patient has answered as many questions as intake allows. Do not ask another
+    question: choose "ready_for_recommendation" (or "escalate_urgent" if any red flag
+    is present) based on what you know, and mention in the reasoning if important
+    details are missing.
     """
   end
 

@@ -2,7 +2,7 @@ defmodule CareRoute.Routing do
   @moduledoc """
   Deterministic state machine over the AI extraction result.
 
-  The Claude call only extracts structure; this module decides what happens
+  The AI call only extracts structure; this module decides what happens
   next by branching on `next_action`, never by re-reading free text:
 
     * `"ask_question"`             -> stay in `:gathering`, post the next question
@@ -14,38 +14,86 @@ defmodule CareRoute.Routing do
   alias CareRoute.Intake.{Conversation, Phrases}
   alias CareRoute.Routing.CareRecommendation
 
-  def apply_extraction(%Conversation{} = conversation, %{"extracted" => extracted} = result) do
+  # Hard cap on patient answers before the AI must recommend or escalate.
+  @max_answers 6
+
+  @doc "Whether the patient has answered as many questions as intake allows."
+  def question_limit_reached?(%Conversation{transcript: transcript}) do
+    Enum.count(transcript, &(&1["role"] == "patient")) >= @max_answers
+  end
+
+  @doc """
+  Applies one AI extraction result to the conversation.
+
+  Returns `{:error, reason}` for a reply that can't be acted on (unknown next
+  step, empty question, recommendation without a valid level, or another
+  question past the limit) so the caller can retry with a fresh AI call.
+  Danger signs always win: any red flag escalates, even in a malformed reply.
+  """
+  def apply_extraction(%Conversation{} = conversation, result) when is_map(result) do
+    extracted = if is_map(result["extracted"]), do: result["extracted"], else: %{}
+    red_flags = list(extracted["red_flags"])
+
     {:ok, _report} =
       Intake.upsert_symptom_report(conversation, %{
-        symptoms: Map.get(extracted, "symptoms", []),
-        duration: Map.get(extracted, "duration"),
-        severity: Map.get(extracted, "severity"),
-        red_flags: Map.get(extracted, "red_flags", [])
+        symptoms: list(extracted["symptoms"]),
+        duration: extracted["duration"],
+        severity: extracted["severity"],
+        red_flags: red_flags
       })
 
-    red_flag? = result["urgency_signal"] == true or extracted["red_flags"] not in [nil, []]
+    if result["urgency_signal"] == true or red_flags != [] do
+      escalate(conversation, result)
+    else
+      case next_step(result) do
+        :escalate ->
+          escalate(conversation, result)
 
-    case {red_flag?, result["next_action"]} do
-      {true, _} ->
-        escalate(conversation, result)
+        :recommend ->
+          recommend(conversation, result)
 
-      {_, "escalate_urgent"} ->
-        escalate(conversation, result)
+        {:ask, question} ->
+          if question_limit_reached?(conversation),
+            do: {:error, :question_limit},
+            else: Intake.append_message(conversation, "assistant", question)
 
-      {_, "ready_for_recommendation"} ->
-        recommend(conversation, result)
-
-      {_, "ask_question"} ->
-        Intake.append_message(conversation, "assistant", result["next_question"])
+        :invalid ->
+          {:error, :invalid_ai_reply}
+      end
     end
   end
 
+  defp next_step(%{"next_action" => "escalate_urgent"}), do: :escalate
+
+  defp next_step(%{
+         "next_action" => "ready_for_recommendation",
+         "recommendation" => %{"urgency_level" => level}
+       })
+       when level in ~w(self_care clinic urgent),
+       do: :recommend
+
+  defp next_step(%{"next_action" => "ask_question", "next_question" => question})
+       when is_binary(question) do
+    case String.trim(question) do
+      "" -> :invalid
+      question -> {:ask, question}
+    end
+  end
+
+  defp next_step(_result), do: :invalid
+
+  defp list(value) when is_list(value), do: Enum.filter(value, &is_binary/1)
+  defp list(_value), do: []
+
   defp escalate(conversation, result) do
+    rec = if is_map(result["recommendation"]), do: result["recommendation"], else: %{}
+    extracted = if is_map(result["extracted"]), do: result["extracted"], else: %{}
+
     with {:ok, _rec} <-
            create_recommendation(conversation, %{
              urgency_level: :urgent,
-             reasoning: get_in(result, ["recommendation", "reasoning"]) || [],
-             warning_signs: get_in(result, ["extracted", "red_flags"]) || []
+             reasoning: list(rec["reasoning"]),
+             warning_signs: list(extracted["red_flags"])
            }),
          {:ok, conversation} <-
            Intake.append_message(
@@ -58,13 +106,13 @@ defmodule CareRoute.Routing do
   end
 
   defp recommend(conversation, result) do
-    rec = Map.get(result, "recommendation", %{})
+    rec = result["recommendation"]
 
     with {:ok, _rec} <-
            create_recommendation(conversation, %{
-             urgency_level: rec["urgency_level"] || "clinic",
-             reasoning: rec["reasoning"] || [],
-             warning_signs: rec["warning_signs"] || []
+             urgency_level: rec["urgency_level"],
+             reasoning: list(rec["reasoning"]),
+             warning_signs: list(rec["warning_signs"])
            }),
          {:ok, conversation} <-
            Intake.append_message(
