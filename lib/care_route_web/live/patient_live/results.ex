@@ -124,6 +124,12 @@ defmodule CareRouteWeb.PatientLive.Results do
 
   defp directions_url(_facility), do: nil
 
+  # Immediate escalations can arrive without reasons from the AI; explain them anyway.
+  defp reasoning(%{reasoning: [], urgency_level: :urgent}, lang),
+    do: Phrases.t(:urgent_reason, lang)
+
+  defp reasoning(%{reasoning: reasoning}, _lang), do: Enum.join(reasoning, " ")
+
   defp urgency_badge(:self_care), do: "bg-route-soft text-route-deep"
   defp urgency_badge(:clinic), do: "bg-[#FBF3EA] text-[#9A6B1F]"
   defp urgency_badge(:urgent), do: "bg-[#FBEAE6] text-[#A23F26]"
@@ -176,7 +182,7 @@ defmodule CareRouteWeb.PatientLive.Results do
           </h1>
 
           <p class="text-[14.5px] leading-[1.65] text-ink-muted max-w-[620px] mb-2">
-            {Enum.join(@rec.reasoning, " ")} {Phrases.t(:not_a_diagnosis, @lang)}
+            {reasoning(@rec, @lang)} {Phrases.t(:not_a_diagnosis, @lang)}
           </p>
           <div :if={@rec.warning_signs != []} class="flex flex-col gap-1.5 mb-[26px]">
             <div :for={sign <- @rec.warning_signs} class="flex items-start gap-[7px]">

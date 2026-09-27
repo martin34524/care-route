@@ -165,6 +165,13 @@ defmodule CareRouteWeb.CoreFlowTest do
 
     {:ok, results, _} = live(conn, ~p"/intake/#{conversation.token}/results")
     assert has_element?(results, "#recommendation", "Urgent care")
+
+    assert has_element?(
+             results,
+             "#recommendation",
+             "You mentioned warning signs that need care right away."
+           )
+
     assert has_element?(results, ~s(#emergency-call[href="tel:999"]), "Call 999")
     assert render(results) =~ "call 999 or 112 immediately"
     assert has_element?(results, "#recommendation", "High urgency · seek care now")

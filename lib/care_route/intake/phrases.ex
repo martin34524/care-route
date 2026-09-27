@@ -149,6 +149,10 @@ defmodule CareRoute.Intake.Phrases do
       "en" => "High urgency · seek care now",
       "sw" => "Dharura kubwa · tafuta huduma sasa hivi"
     },
+    urgent_reason: %{
+      "en" => "You mentioned warning signs that need care right away.",
+      "sw" => "Umetaja dalili za hatari zinazohitaji huduma mara moja."
+    },
     not_a_diagnosis: %{
       "en" => "This is a recommendation, not a diagnosis.",
       "sw" => "Hili ni pendekezo, si utambuzi wa ugonjwa."
