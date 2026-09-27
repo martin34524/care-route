@@ -25,6 +25,19 @@ defmodule CareRoute.Release do
     :ok
   end
 
+  @doc """
+  Clears all patient data and reseeds facilities, for demo rehearsals on a
+  deployed app:
+
+      bin/care_route eval "CareRoute.Release.demo_reset()"
+  """
+  def demo_reset do
+    load_app()
+    {:ok, _} = Application.ensure_all_started(@app)
+    deleted = CareRoute.Demo.reset!()
+    IO.puts("Deleted #{CareRoute.Demo.describe(deleted)}. Facilities and clinicians reseeded.")
+  end
+
   def rollback(repo, version) do
     load_app()
     {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))

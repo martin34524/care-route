@@ -116,7 +116,10 @@ Leaflet with OpenStreetMap tiles.
 - `/clinician` and `/admin` use basic auth from `STAFF_USERNAME` / `STAFF_PASSWORD`.
   They're required in production; in development the pages are open if unset.
 - Before a demo rehearsal, `mix care_route.demo_reset --yes` clears all patient data and
-  reseeds facilities (without `--yes` it only shows what it would delete).
+  reseeds facilities (without `--yes` it only shows what it would delete). On a deployed
+  app: `bin/care_route eval "CareRoute.Release.demo_reset()"`.
+- The step-by-step demo script, with a 2½-minute pitch timeline and fallbacks, is in
+  [`docs/DEMO.md`](docs/DEMO.md).
 - `mix test` runs the suite (offline stub, no keys needed); `mix precommit` also checks
   formatting and compiler warnings.
 
