@@ -5,10 +5,14 @@ defmodule CareRouteWeb.PatientLive.Results do
   """
   use CareRouteWeb, :live_view
 
-  alias CareRoute.{Facilities, Intake, Referrals}
+  alias CareRoute.{Facilities, Geocoder, Intake, Referrals}
   alias CareRoute.Intake.Phrases
 
   @building_icon "M4 21V7l8-4 8 4v14 M9 21v-6h6v6 M12 7v4 M10 9h4"
+
+  # "Send referral to a clinician" only picks a partner this close; a distant
+  # partner can still be chosen deliberately from its card.
+  @one_tap_radius_km 50
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
@@ -20,7 +24,15 @@ defmodule CareRouteWeb.PatientLive.Results do
         {:ok, push_navigate(socket, to: ~p"/intake/#{conversation.token}")}
 
       rec ->
-        origin = Map.put(Facilities.demo_origin(), :source, "demo")
+        origin = Map.merge(Facilities.demo_origin(), %{source: "demo", label: nil})
+
+        facilities =
+          case Facilities.nearest(origin, Facilities.types_for(rec.urgency_level),
+                 partners_within_km: @one_tap_radius_km
+               ) do
+            {:ok, facilities} -> facilities
+            :out_of_area -> []
+          end
 
         {:ok,
          assign(socket,
@@ -29,7 +41,7 @@ defmodule CareRouteWeb.PatientLive.Results do
            rec: rec,
            lang: conversation.patient.preferred_language,
            origin: origin,
-           facilities: facilities_for(rec.urgency_level, origin),
+           facilities: facilities,
            referral: Referrals.get_referral_for_conversation(conversation.id)
          )}
     end
@@ -40,17 +52,19 @@ defmodule CareRouteWeb.PatientLive.Results do
     {:noreply, socket}
   end
 
-  # "Send referral to a clinician" without a pick goes to the nearest facility.
+  # "Send referral to a clinician" without a pick goes to the nearest partner.
   def handle_event("refer", params, socket) do
     %{conversation: conversation, facilities: facilities, rec: rec} = socket.assigns
-
+    # Only partner facilities that were actually offered can receive a referral.
     facility =
       case params do
-        %{"facility-id" => id} -> Enum.find(facilities, &(to_string(&1.id) == to_string(id)))
-        _ -> List.first(facilities)
+        %{"facility-id" => id} ->
+          Enum.find(facilities, &(&1.partner and to_string(&1.id) == to_string(id)))
+
+        _ ->
+          nearby_partner(facilities)
       end
 
-    # Only facilities that were actually offered can be chosen.
     if facility do
       {:ok, referral} =
         Referrals.create_referral(%{
@@ -71,30 +85,50 @@ defmodule CareRouteWeb.PatientLive.Results do
 
   def handle_event("located", %{"lat" => lat, "lng" => lng}, socket)
       when is_number(lat) and is_number(lng) do
-    origin = %{lat: lat, lng: lng, source: "device"}
-
-    case Facilities.with_distances(socket.assigns.facilities, origin) do
-      {:ok, facilities} ->
-        {:noreply,
-         socket
-         |> assign(origin: origin, facilities: facilities)
-         |> push_event("facility-map:update", %{facilities: map_data(facilities), origin: origin})}
-
-      :out_of_area ->
-        {:noreply, put_flash(socket, :info, Phrases.t(:out_of_area, socket.assigns.lang))}
-    end
+    {:noreply, move_to(socket, %{lat: lat, lng: lng, source: "device", label: nil})}
   end
 
   def handle_event("located", _params, socket), do: {:noreply, socket}
 
-  defp facilities_for(urgency_level, origin) do
-    facilities = Facilities.list_facilities_for(urgency_level)
+  def handle_event("find-town", %{"town" => town}, socket) do
+    case Geocoder.search(town) do
+      {:ok, place} ->
+        {:noreply,
+         move_to(socket, %{lat: place.lat, lng: place.lng, source: "search", label: place.label})}
 
-    case Facilities.with_distances(facilities, origin) do
-      {:ok, located} -> located
-      :out_of_area -> facilities
+      :not_found ->
+        {:noreply, put_flash(socket, :error, Phrases.t(:town_not_found, socket.assigns.lang))}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, Phrases.t(:town_error, socket.assigns.lang))}
     end
   end
+
+  # Re-searches facilities around a new origin and moves the map there.
+  defp move_to(socket, origin) do
+    types = Facilities.types_for(socket.assigns.rec.urgency_level)
+
+    case Facilities.nearest(origin, types, partners_within_km: @one_tap_radius_km) do
+      {:ok, facilities} ->
+        socket
+        |> assign(origin: origin, facilities: facilities)
+        |> push_event("facility-map:update", %{facilities: map_data(facilities), origin: origin})
+
+      :out_of_area ->
+        put_flash(socket, :info, Phrases.t(:out_of_area, socket.assigns.lang))
+    end
+  end
+
+  defp nearby_partner(facilities) do
+    Enum.find(facilities, &(&1.partner and &1.distance_km <= @one_tap_radius_km))
+  end
+
+  defp origin_label(%{source: "device"}, lang), do: Phrases.t(:near_device, lang)
+
+  defp origin_label(%{source: "search", label: place}, lang),
+    do: Phrases.t(:near_place, lang, place: place)
+
+  defp origin_label(_origin, lang), do: Phrases.t(:near_default, lang)
 
   defp map_data(facilities) do
     for f <- facilities do
@@ -105,7 +139,10 @@ defmodule CareRouteWeb.PatientLive.Results do
         address: f.address,
         lat: f.latitude,
         lng: f.longitude,
-        distance_km: f.distance_km
+        distance_km: f.distance_km,
+        partner: f.partner,
+        phone: f.phone,
+        directions: directions_url(f)
       }
     end
   end
@@ -113,6 +150,9 @@ defmodule CareRouteWeb.PatientLive.Results do
   defp map_labels(lang) do
     %{
       go: Phrases.t(:request_referral, lang),
+      directions: Phrases.t(:directions, lang),
+      call: Phrases.t(:call, lang),
+      not_connected: Phrases.t(:not_connected, lang),
       types: Map.new(~w(clinic hospital specialist)a, &{&1, type_label(&1, lang)})
     }
   end
@@ -134,11 +174,13 @@ defmodule CareRouteWeb.PatientLive.Results do
   defp urgency_badge(:clinic), do: "bg-[#FBF3EA] text-[#9A6B1F]"
   defp urgency_badge(:urgent), do: "bg-[#FBEAE6] text-[#A23F26]"
 
-  defp facility_badge(%{services: services} = f, lang) do
-    if "emergency" in services,
-      do: {Phrases.t(:emergency_24_7, lang), "bg-[#FBEAE6] text-[#A23F26]"},
-      else: {type_label(f.type, lang), "bg-route-soft text-route-deep"}
+  defp facility_badge(f, lang) do
+    if f.emergency,
+      do: {Phrases.t(:emergency_dept, lang), "bg-[#FBEAE6] text-[#A23F26]"},
+      else: {type_label(f.type, lang), "bg-paper text-[#5C665F]"}
   end
+
+  defp tel(phone), do: "tel:" <> String.replace(phone, ~r/[^+0-9]/, "")
 
   defp services_line(%{services: services}) do
     services |> Enum.map(&String.capitalize/1) |> Enum.join(" · ")
@@ -215,7 +257,7 @@ defmodule CareRouteWeb.PatientLive.Results do
               <.arrow_icon class="size-[15px]" />
             </a>
             <button
-              :if={!@referral && @facilities != []}
+              :if={!@referral && nearby_partner(@facilities)}
               id="send-referral"
               phx-click="refer"
               class="text-[#333E37] px-5 py-3 rounded-[10px] text-sm font-semibold border border-line hover:bg-[#EAF1EE]"
@@ -231,6 +273,38 @@ defmodule CareRouteWeb.PatientLive.Results do
             <h2 class="text-base font-semibold">{Phrases.t(:facilities_near, @lang)}</h2>
             <div class="text-[12.5px] text-[#8B958F]">{Phrases.t(:sorted_by_distance, @lang)}</div>
           </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
+            <p id="origin-label" class="text-[13px] text-[#5C665F] flex items-center gap-1.5">
+              <.stroke_icon
+                class="size-4 shrink-0 text-route"
+                d="M12 3a7 7 0 0 0-7 7c0 5 7 11 7 11s7-6 7-11a7 7 0 0 0-7-7z M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+              />
+              {origin_label(@origin, @lang)}
+            </p>
+            <form id="town-form" phx-submit="find-town" class="flex gap-2">
+              <label for="town-input" class="sr-only">{Phrases.t(:town_label, @lang)}</label>
+              <input
+                id="town-input"
+                name="town"
+                type="search"
+                autocomplete="address-level2"
+                placeholder={Phrases.t(:town_placeholder, @lang)}
+                class="w-full sm:w-56 rounded-[9px] border border-line px-3 py-2 text-[13px] outline-none focus:border-route"
+              />
+              <button class="shrink-0 text-[13px] font-semibold text-[#333E37] border border-line hover:bg-[#EAF1EE] px-3.5 rounded-[9px]">
+                {Phrases.t(:town_search, @lang)}
+              </button>
+            </form>
+          </div>
+
+          <p
+            :if={@facilities == []}
+            id="no-facilities"
+            class="rounded-[14px] bg-paper border border-line px-5 py-4 text-sm text-[#5C665F] mb-3.5"
+          >
+            {Phrases.t(:no_facilities, @lang)}
+          </p>
 
           <div
             :if={@facilities != []}
@@ -269,6 +343,12 @@ defmodule CareRouteWeb.PatientLive.Results do
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-1">
                     <span class="text-[15px] font-semibold">{f.name}</span>
+                    <span
+                      :if={f.partner}
+                      class="text-[10.5px] font-semibold px-[9px] py-[3px] rounded-full bg-route-soft text-route-deep"
+                    >
+                      {Phrases.t(:partner_badge, @lang)}
+                    </span>
                     <% {badge, badge_class} = facility_badge(f, @lang) %>
                     <span class={[
                       "text-[10.5px] font-semibold px-[9px] py-[3px] rounded-full",
@@ -285,6 +365,12 @@ defmodule CareRouteWeb.PatientLive.Results do
                   <div :if={f.services != []} class="text-[12.5px] text-[#8B958F]">
                     {services_line(f)}
                   </div>
+                  <div :if={f.opening_hours} class="text-[12.5px] text-[#8B958F]">
+                    {f.opening_hours}
+                  </div>
+                  <div :if={!f.partner} class="text-[12px] text-[#8B958F] mt-1">
+                    {Phrases.t(:not_connected, @lang)}
+                  </div>
                 </div>
               </div>
               <div class="flex gap-2.5 shrink-0">
@@ -297,8 +383,15 @@ defmodule CareRouteWeb.PatientLive.Results do
                 >
                   {Phrases.t(:directions, @lang)}
                 </a>
+                <a
+                  :if={f.phone}
+                  href={tel(f.phone)}
+                  class="text-[13px] font-semibold text-[#333E37] px-[15px] py-[9px] rounded-[9px] border border-line hover:bg-[#EAF1EE]"
+                >
+                  {Phrases.t(:call, @lang)}
+                </a>
                 <button
-                  :if={!@referral}
+                  :if={f.partner && !@referral}
                   phx-click="refer"
                   phx-value-facility-id={f.id}
                   class="text-[13px] font-semibold text-white bg-route hover:bg-route-dark px-[15px] py-[9px] rounded-[9px]"
@@ -315,6 +408,10 @@ defmodule CareRouteWeb.PatientLive.Results do
             </div>
           </div>
         </section>
+
+        <p :if={@facilities != []} class="mt-3 text-[11.5px] text-[#8B958F]">
+          Facility data © OpenStreetMap contributors (ODbL).
+        </p>
 
         <%!-- Disclaimer --%>
         <div class="flex gap-3 px-5 py-4 rounded-[14px] bg-[#FBF3EA] border border-[#F0DCC3]">

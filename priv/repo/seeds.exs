@@ -5,7 +5,6 @@
 #
 #     mix run priv/repo/seeds.exs
 
-import Ecto.Query
 alias CareRoute.Repo
 alias CareRoute.Facilities
 alias CareRoute.Facilities.{Clinician, Facility}
@@ -15,6 +14,12 @@ upsert = fn schema, attrs ->
   |> schema.changeset(attrs)
   |> Repo.insert_or_update!()
 end
+
+# The demo partner facilities: fictional names at realistic Nairobi locations.
+# They stand in for pilot clinics that use CareRoute's clinician dashboard, so
+# only they receive referrals. Real facilities come from
+# `mix care_route.import_facilities` (OpenStreetMap) and are directory-only.
+partner = %{source: "seed", partner: true}
 
 facilities =
   for attrs <- [
@@ -40,6 +45,7 @@ facilities =
           address: "Hospital Rd, Upper Hill",
           latitude: -1.3007,
           longitude: 36.8065,
+          emergency: true,
           services: ["emergency", "pediatrics", "imaging", "inpatient"]
         },
         %{
@@ -48,6 +54,7 @@ facilities =
           address: "3rd Parklands Ave, Parklands",
           latitude: -1.2612,
           longitude: 36.8189,
+          emergency: true,
           services: ["emergency", "inpatient", "lab"]
         },
         %{
@@ -59,15 +66,8 @@ facilities =
           services: ["pediatrics", "respiratory"]
         }
       ] do
-    upsert.(Facility, attrs)
+    upsert.(Facility, Map.merge(attrs, partner))
   end
-
-# Store distances from the demo origin so lists are sensible without a live location.
-{:ok, with_distances} = Facilities.with_distances(facilities, Facilities.demo_origin())
-
-for f <- with_distances do
-  Repo.update_all(where(Facility, id: ^f.id), set: [distance_km: f.distance_km])
-end
 
 by_name = Map.new(facilities, &{&1.name, &1})
 

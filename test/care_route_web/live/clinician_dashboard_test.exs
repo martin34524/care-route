@@ -8,8 +8,11 @@ defmodule CareRouteWeb.ClinicianDashboardTest do
   alias CareRoute.{Facilities, Intake, Referrals, Routing}
 
   setup do
-    {:ok, clinic} = Facilities.create_facility(%{name: "Test Clinic", type: :clinic})
-    {:ok, hospital} = Facilities.create_facility(%{name: "Test Hospital", type: :hospital})
+    {:ok, clinic} =
+      Facilities.create_facility(%{name: "Test Clinic", type: :clinic, partner: true})
+
+    {:ok, hospital} =
+      Facilities.create_facility(%{name: "Test Hospital", type: :hospital, partner: true})
 
     {:ok, nurse} =
       Facilities.create_clinician(%{

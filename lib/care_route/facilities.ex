@@ -1,6 +1,7 @@
 defmodule CareRoute.Facilities do
   @moduledoc """
-  Simulated facility directory and the clinicians who work there.
+  The facility directory (real facilities imported from OpenStreetMap or a CSV
+  export, plus the demo partner facilities) and the clinicians who work there.
   """
 
   import Ecto.Query
@@ -8,54 +9,98 @@ defmodule CareRoute.Facilities do
   alias CareRoute.Facilities.{Facility, Clinician}
 
   def list_facilities do
-    Repo.all(from f in Facility, order_by: [asc: f.distance_km])
+    Repo.all(from f in Facility, order_by: [asc: f.name])
   end
 
-  @doc "Facilities able to handle a given urgency level, nearest first."
-  def list_facilities_for(:urgent), do: by_types([:hospital])
-  def list_facilities_for(:clinic), do: by_types([:clinic, :specialist])
-  def list_facilities_for(_), do: by_types([:clinic])
-
-  defp by_types(types) do
-    Repo.all(from f in Facility, where: f.type in ^types, order_by: [asc: f.distance_km])
+  @doc "Facilities that use CareRoute's clinician dashboard, so referrals reach them."
+  def list_partners do
+    Repo.all(from f in Facility, where: f.partner, order_by: [asc: f.name])
   end
 
-  @earth_radius_km 6371.0
-  # A patient further than this from every facility is outside the simulated
-  # network, so their real position isn't used for distances.
-  @max_origin_km 100
+  @doc "The kinds of facility suited to a recommended level of care."
+  def types_for(:urgent), do: [:hospital]
+  # Hospital outpatient departments also see non-urgent patients.
+  def types_for(_level), do: [:clinic, :specialist, :hospital]
 
   @doc "The simulated patient position used until the browser shares a real one."
   def demo_origin, do: Application.fetch_env!(:care_route, :demo_origin)
 
-  @doc """
-  Recomputes `distance_km` from `origin` (`%{lat: _, lng: _}`) and sorts nearest
-  first. Returns `:out_of_area` when the origin is far from every facility.
-  """
-  def with_distances(facilities, %{lat: lat, lng: lng} = origin)
-      when is_number(lat) and is_number(lng) do
-    facilities =
-      facilities
-      |> Enum.map(fn f ->
-        if f.latitude, do: %{f | distance_km: Float.round(haversine_km(origin, f), 1)}, else: f
-      end)
-      |> Enum.sort_by(&(&1.distance_km || :infinity))
+  # Search radii (km): start close and widen until there are enough results,
+  # so rural patients still get options. Kenya is about 1,000 km across.
+  @radii [10, 25, 50, 100, 250, 600]
+  @min_results 3
 
-    if Enum.any?(facilities, &(&1.distance_km && &1.distance_km <= @max_origin_km)),
-      do: {:ok, facilities},
-      else: :out_of_area
+  @doc """
+  The nearest facilities of `types` to `origin` (`%{lat: _, lng: _}`), nearest
+  first, with `distance_km` filled in. Returns `:out_of_area` when nothing is
+  within #{List.last(@radii)} km (e.g. the patient isn't in Kenya).
+
+  Options: `:limit` (default 10); `:partners_within_km` also includes partner
+  facilities that close even when more than `limit` places are nearer, so a
+  patient in a dense city still sees the ones that can receive a referral.
+  """
+  def nearest(%{lat: lat, lng: lng}, types, opts \\ []) when is_number(lat) and is_number(lng) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    Enum.find_value(@radii, :out_of_area, fn radius ->
+      found = within(lat, lng, types, radius, limit)
+
+      cond do
+        length(found) >= min(@min_results, limit) -> {:ok, found}
+        radius == List.last(@radii) and found != [] -> {:ok, found}
+        true -> nil
+      end
+    end)
+    |> with_partners(lat, lng, types, opts[:partners_within_km])
   end
 
-  defp haversine_km(%{lat: lat1, lng: lng1}, %Facility{latitude: lat2, longitude: lng2}) do
-    to_rad = &(&1 * :math.pi() / 180)
-    dlat = to_rad.(lat2 - lat1)
-    dlng = to_rad.(lng2 - lng1)
+  defp with_partners({:ok, found}, lat, lng, types, radius_km) when is_number(radius_km) do
+    partners =
+      lat
+      |> within(lng, types, radius_km, 50, partners_only: true)
+      |> Enum.reject(fn p -> Enum.any?(found, &(&1.id == p.id)) end)
 
-    a =
-      :math.pow(:math.sin(dlat / 2), 2) +
-        :math.cos(to_rad.(lat1)) * :math.cos(to_rad.(lat2)) * :math.pow(:math.sin(dlng / 2), 2)
+    {:ok, Enum.sort_by(found ++ partners, & &1.distance_km)}
+  end
 
-    2 * @earth_radius_km * :math.asin(:math.sqrt(a))
+  defp with_partners(result, _lat, _lng, _types, _radius_km), do: result
+
+  defp within(lat, lng, types, radius_km, limit, opts \\ []) do
+    # Bounding box first (uses the latitude/longitude index), then the exact
+    # great-circle distance.
+    dlat = radius_km / 111.0
+    dlng = radius_km / (111.0 * max(:math.cos(lat * :math.pi() / 180), 0.01))
+
+    candidates =
+      from f in Facility,
+        where: f.type in ^types,
+        where: f.partner or not (^Keyword.get(opts, :partners_only, false)),
+        where: f.latitude >= ^(lat - dlat) and f.latitude <= ^(lat + dlat),
+        where: f.longitude >= ^(lng - dlng) and f.longitude <= ^(lng + dlng),
+        select: %{
+          id: f.id,
+          distance:
+            fragment(
+              "2 * 6371 * asin(sqrt(power(sin(radians(? - ?) / 2), 2) + cos(radians(?)) * cos(radians(?)) * power(sin(radians(? - ?) / 2), 2)))",
+              f.latitude,
+              type(^lat, :float),
+              type(^lat, :float),
+              f.latitude,
+              f.longitude,
+              type(^lng, :float)
+            )
+        }
+
+    from(f in Facility,
+      join: c in subquery(candidates),
+      on: c.id == f.id,
+      where: c.distance <= ^radius_km,
+      order_by: [asc: c.distance, asc: f.id],
+      limit: ^limit,
+      select: {f, c.distance}
+    )
+    |> Repo.all()
+    |> Enum.map(fn {f, distance} -> %{f | distance_km: Float.round(distance, 1)} end)
   end
 
   def get_facility!(id), do: Repo.get!(Facility, id)

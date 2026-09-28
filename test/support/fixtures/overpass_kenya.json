@@ -1,0 +1,20 @@
+{
+  "elements": [
+    {"type": "node", "id": 101, "lat": -1.30, "lon": 36.80,
+     "tags": {"amenity": "hospital", "name": "Coast General Hospital", "emergency": "yes",
+              "phone": "+254 41 231 4201;+254 41 222 2222", "addr:street": "Moi Ave", "addr:city": "Mombasa",
+              "opening_hours": "24/7", "healthcare:speciality": "general;paediatrics;emergency_medicine"}},
+    {"type": "way", "id": 102, "center": {"lat": -1.3001, "lon": 36.8001},
+     "tags": {"amenity": "hospital", "name": "Coast General Hospital"}},
+    {"type": "node", "id": 103, "lat": -1.60, "lon": 35.66,
+     "tags": {"amenity": "hospital", "name": "Naikarra Dispensary"}},
+    {"type": "node", "id": 104, "lat": 0.08, "lon": 34.02,
+     "tags": {"amenity": "clinic", "name": "kiriani mission hospital", "addr:county": "Murang'a County"}},
+    {"type": "node", "id": 105, "lat": -1.31, "lon": 36.79,
+     "tags": {"amenity": "clinic", "name": "The Mater Hospital - Satellite Clinic"}},
+    {"type": "node", "id": 106, "lat": -1.32, "lon": 36.78,
+     "tags": {"amenity": "clinic"}},
+    {"type": "relation", "id": 107,
+     "tags": {"amenity": "hospital", "name": "No Coordinates Hospital"}}
+  ]
+}

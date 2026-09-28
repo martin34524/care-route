@@ -38,6 +38,18 @@ defmodule CareRoute.Release do
     IO.puts("Deleted #{CareRoute.Demo.describe(deleted)}. Facilities and clinicians reseeded.")
   end
 
+  @doc """
+  Imports every hospital and clinic in Kenya from OpenStreetMap (safe to re-run):
+
+      bin/care_route eval "CareRoute.Release.import_facilities()"
+  """
+  def import_facilities do
+    load_app()
+    {:ok, _} = Application.ensure_all_started(@app)
+    {:ok, result} = CareRoute.Facilities.Import.run(:osm)
+    IO.puts("Imported #{result.imported} facilities; removed #{result.removed}.")
+  end
+
   def rollback(repo, version) do
     load_app()
     {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))

@@ -157,12 +157,16 @@ defmodule CareRoute.Referrals do
   defp to_float(%Decimal{} = d), do: Decimal.to_float(d)
   defp to_float(n), do: n / 1
 
-  @doc "Per-facility referral load: `[%{facility: name, type: type, pending: n, total: n}]`."
+  @doc """
+  Per-facility referral load for partner facilities (and any other facility
+  that has referrals): `[%{id, facility, type, pending, total}]`.
+  """
   def load_by_facility do
     Repo.all(
       from f in CareRoute.Facilities.Facility,
         left_join: r in Referral,
         on: r.to_facility_id == f.id,
+        where: f.partner or not is_nil(r.id),
         group_by: [f.id, f.name, f.type],
         order_by: [desc: count(r.id), asc: f.name],
         select: %{

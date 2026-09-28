@@ -10,10 +10,22 @@ defmodule CareRouteWeb.CoreFlowTest do
   # Uses the offline IntakeStub (no ANTHROPIC_API_KEY in test).
   setup do
     {:ok, clinic} =
-      Facilities.create_facility(%{name: "Test Clinic", type: :clinic, distance_km: 1.0})
+      Facilities.create_facility(%{
+        name: "Test Clinic",
+        type: :clinic,
+        partner: true,
+        latitude: -1.2930,
+        longitude: 36.7880
+      })
 
     {:ok, hospital} =
-      Facilities.create_facility(%{name: "Test Hospital", type: :hospital, distance_km: 3.0})
+      Facilities.create_facility(%{
+        name: "Test Hospital",
+        type: :hospital,
+        partner: true,
+        latitude: -1.3000,
+        longitude: 36.8000
+      })
 
     {:ok, patient} = Intake.create_patient(%{name: "Asha", age: 3})
     {:ok, conversation} = Intake.start_conversation(patient)

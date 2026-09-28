@@ -94,9 +94,30 @@ export default {
     add("strong", f.name)
     add("div", `${this.labels.types[f.type] || f.type} · ${f.distance_km} km`, "text-xs opacity-70")
     if (f.address) add("div", f.address, "text-xs")
-    if (!this.selectedId) {
-      const button = add("button", this.labels.go, "mt-2 bg-route hover:bg-route-dark text-white px-3 py-1 rounded-md text-xs font-semibold")
-      button.dataset.refer = f.id
+    if (!f.partner) add("div", this.labels.not_connected, "text-xs opacity-70 mt-1")
+
+    const actions = document.createElement("div")
+    actions.className = "flex gap-2 mt-2"
+    root.appendChild(actions)
+    const action = (tag, text, cls) => {
+      const el = document.createElement(tag)
+      el.textContent = text
+      el.className = cls
+      actions.appendChild(el)
+      return el
+    }
+    // Only partner facilities use CareRoute, so only they can receive a referral.
+    if (f.partner && !this.selectedId) {
+      action("button", this.labels.go, "bg-route hover:bg-route-dark text-white px-3 py-1 rounded-md text-xs font-semibold").dataset.refer = f.id
+    }
+    if (f.directions) {
+      const link = action("a", this.labels.directions, "border border-line px-3 py-1 rounded-md text-xs font-semibold")
+      link.href = f.directions
+      link.target = "_blank"
+      link.rel = "noopener noreferrer"
+    }
+    if (f.phone) {
+      action("a", this.labels.call, "border border-line px-3 py-1 rounded-md text-xs font-semibold").href = "tel:" + f.phone.replace(/[^+0-9]/g, "")
     }
     return root
   },

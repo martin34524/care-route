@@ -176,7 +176,42 @@ defmodule CareRoute.Intake.Phrases do
       "sw" => "Rufaa imetumwa kwa %{facility}. Watakuwa na taarifa zako utakapofika."
     },
     referral_sent_short: %{"en" => "Referral sent", "sw" => "Rufaa imetumwa"},
-    emergency_24_7: %{"en" => "Emergency 24/7", "sw" => "Dharura saa 24"},
+    emergency_dept: %{"en" => "Emergency department", "sw" => "Idara ya dharura"},
+    partner_badge: %{"en" => "CareRoute partner", "sw" => "Mshirika wa CareRoute"},
+    not_connected: %{
+      "en" => "Not connected to CareRoute yet — call ahead or go directly.",
+      "sw" => "Bado hakijaunganishwa na CareRoute — piga simu kwanza au nenda moja kwa moja."
+    },
+    call: %{"en" => "Call", "sw" => "Piga simu"},
+    near_device: %{"en" => "Near your location", "sw" => "Karibu na mahali ulipo"},
+    near_default: %{
+      "en" => "Near central Nairobi — share your location or search a town",
+      "sw" => "Karibu na katikati ya Nairobi — shiriki mahali ulipo au tafuta mji"
+    },
+    near_place: %{"en" => "Near %{place}", "sw" => "Karibu na %{place}"},
+    town_label: %{
+      "en" => "Search a town or area in Kenya",
+      "sw" => "Tafuta mji au eneo nchini Kenya"
+    },
+    town_placeholder: %{
+      "en" => "e.g. Kisumu, Nakuru, Mombasa",
+      "sw" => "k.m. Kisumu, Nakuru, Mombasa"
+    },
+    town_search: %{"en" => "Search", "sw" => "Tafuta"},
+    town_not_found: %{
+      "en" => "We couldn't find that place in Kenya. Try a nearby town.",
+      "sw" => "Hatukupata mahali hapo nchini Kenya. Jaribu mji ulio karibu."
+    },
+    town_error: %{
+      "en" => "Place search isn't working right now. Please try again.",
+      "sw" => "Utafutaji wa mahali haufanyi kazi sasa hivi. Tafadhali jaribu tena."
+    },
+    no_facilities: %{
+      "en" =>
+        "No facilities found nearby. Search another town, or call %{numbers} in an emergency.",
+      "sw" =>
+        "Hakuna vituo vilivyopatikana karibu. Tafuta mji mwingine, au piga simu %{numbers} ikiwa ni dharura."
+    },
     disclaimer: %{
       "en" =>
         "CareRoute AI does not diagnose medical conditions. If your symptoms worsen or you " <>
@@ -189,8 +224,10 @@ defmodule CareRoute.Intake.Phrases do
     type_hospital: %{"en" => "Hospital", "sw" => "Hospitali"},
     type_specialist: %{"en" => "Specialist", "sw" => "Mtaalamu"},
     out_of_area: %{
-      "en" => "You're outside the demo area, so distances are from a demo location.",
-      "sw" => "Uko nje ya eneo la majaribio, kwa hivyo umbali unapimwa kutoka eneo la majaribio."
+      "en" =>
+        "Your location looks outside Kenya, so facilities are shown near Nairobi. Search a town to look elsewhere.",
+      "sw" =>
+        "Mahali ulipo panaonekana kuwa nje ya Kenya, kwa hivyo vituo vinaonyeshwa karibu na Nairobi. Tafuta mji ili kuangalia kwingine."
     }
   }
 

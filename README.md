@@ -104,6 +104,16 @@ otherwise an offline stub that returns the same contract — so the whole app, a
 suite, run without any key. Failed calls retry quickly; after the last attempt the patient
 sees a notice and the clinician sees "Summary unavailable", each with a retry button.
 
+**Facilities.** The directory holds every hospital and clinic in Kenya from OpenStreetMap
+(`mix care_route.import_facilities`, about 1,800 places; re-run to refresh) plus the demo
+**partner** facilities from the seeds. Only partners use the clinician dashboard, so only they
+receive referrals; every other facility offers directions and a call. The results page
+searches the nearest facilities around the patient's location (or a town they search, or
+central Nairobi by default), widening the radius until it finds some; urgent cases are shown
+hospitals only. Places tagged as hospitals in OpenStreetMap but named as dispensaries or
+health centres are treated as clinics. A Kenya Master Health Facility List export can be
+loaded with `--csv` (columns in `CareRoute.Facilities.Import`).
+
 **Stack.** Phoenix 1.8 + LiveView, Ecto/PostgreSQL, Oban, Req, Tailwind + daisyUI,
 Leaflet with OpenStreetMap tiles.
 
@@ -140,17 +150,20 @@ In `fly.toml`, run migrations on every deploy:
     [deploy]
       release_command = "/app/bin/migrate"
 
-Then seed the facility directory once (safe to re-run):
+Then seed the partner facilities and import Kenya's facilities (both safe to re-run):
 
     fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.seed()"'
+    fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.import_facilities()"'
 
 Set `PHX_HOST` to the app's hostname (e.g. `care-route.fly.dev`). Phones only allow the
 microphone (voice answers) and location (nearest facilities) over HTTPS, which Fly provides.
 
 ## Known limitations
 
-- **Simulated facilities.** Names, services and addresses are illustrative; swap in a real
-  directory via `priv/repo/seeds.exs`. Opening hours and wait times aren't modelled.
+- **Facility data quality.** OpenStreetMap coverage of Kenya is incomplete (about 1,800
+  hospitals and clinics) and few entries have phone numbers or opening hours; the official
+  Kenya Master Health Facility List is the better source once you have an export. The
+  partner facilities are fictional stand-ins for pilot clinics.
 - **Voice privacy.** Speech recognition runs in the browser; Chrome sends audio to Google's
   speech service. Browsers without the Web Speech API (e.g. Firefox) show typing only.
 - **Rate limits.** Gemini's free tier allows 5 requests per minute per model; use a paid key

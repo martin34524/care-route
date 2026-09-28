@@ -28,7 +28,8 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
      assign(socket,
        page_title: "Referral queue",
        clinicians: Facilities.list_clinicians(),
-       facilities: Facilities.list_facilities(),
+       # Only partners can receive a reassigned referral (they use this dashboard).
+       facilities: Facilities.list_partners(),
        search: "",
        tab: "all",
        new_ids: MapSet.new(),

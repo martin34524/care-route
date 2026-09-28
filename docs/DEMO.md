@@ -11,6 +11,9 @@ What to expect at each step comes from a rehearsal run against Gemini on
 
 - [ ] **Reset the data.** Deployed: `fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.demo_reset()"'`.
       Local: `mix care_route.demo_reset --yes`.
+- [ ] **Real facilities loaded** (once, and to refresh): deployed
+      `fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.import_facilities()"'`,
+      local `mix care_route.import_facilities`.
 - [ ] **Paid AI key in place** (`GEMINI_API_KEY` on a paid plan, ideally `ANTHROPIC_API_KEY`
       too as automatic backup). On the free tier each answer took 9–36 seconds in rehearsal.
 - [ ] **Two screens.** The phone is the patient. The laptop is the clinician: open
@@ -45,8 +48,11 @@ What to expect at each step comes from a rehearsal run against Gemini on
    clinician soon", reasons that reassure (she's drinking and playing), and three
    warning signs (breathing, unusual sleepiness, dehydration).
    *(If it comes back as Self-care instead, carry on — "Find a clinic near me" still works.)*
-7. Scroll to the map → tap **Request referral** on **Kilimani Community Clinic**.
-   *Expect:* "Referral sent to Kilimani Community Clinic…", the map zooms to it.
+7. Scroll to the map: real Nairobi facilities, nearest first. Point out that most say
+   "Not connected to CareRoute yet" (directions and call only), while the **CareRoute
+   partner** ones can receive a referral. Tap **Request referral** on **Kilimani Community
+   Clinic** (a partner). *Expect:* "Referral sent to Kilimani Community Clinic…", the map
+   zooms to it. Optional: search "Kisumu" to show real facilities anywhere in Kenya.
 
 **On the laptop (clinician)**
 
@@ -65,8 +71,9 @@ What to expect at each step comes from a rehearsal run against Gemini on
    *Expect (≈ 4 s):* no follow-up questions — "Based on what you've shared, please seek
    urgent care now… call 999 or 112 now." The progress bar turns red.
 3. **See my recommendation** → **Urgent care**, "High urgency · seek care now", the
-   danger signs in red, and a big red **Call 999** button first. Hospitals only, nearest first.
-4. **Send referral to a clinician** (one tap, nearest hospital).
+   danger signs in red, and a big red **Call 999** button first. Real hospitals only,
+   nearest first, with the partner hospitals included.
+4. **Send referral to a clinician** (one tap, nearest partner hospital within 50 km).
 5. On the laptop: the new referral jumps to the **top** of the queue — **Urgent** sorts
    above everything else.
 

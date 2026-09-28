@@ -45,6 +45,11 @@ config :care_route, :ai_req_options,
   plug: {Req.Test, CareRoute.AI},
   retry_delay: fn _attempt -> 0 end
 
+# Facility directory and geocoder HTTP calls are stubbed with Req.Test too.
+config :care_route, :directory_req_options,
+  plug: {Req.Test, CareRoute.Directory},
+  retry: false
+
 # Staff pages are protected in tests; ConnCase adds these credentials by default.
 config :care_route, :staff_auth, username: "staff", password: "test-password"
 
