@@ -43,6 +43,22 @@ config :care_route, :utc_offset_seconds, 3 * 60 * 60
 # Emergency numbers shown to patients (Kenya), first one used for tap-to-call.
 config :care_route, :emergency_numbers, ["999", "112"]
 
+# Crisis support lines added to the self-harm message, as
+# [%{label: "…", number: "…"}]. Only add lines you've verified are staffed.
+config :care_route, :crisis_lines, []
+
+# {max hits, window in seconds} per key; see CareRoute.RateLimit.
+config :care_route, :rate_limits,
+  # New conversations per visitor IP (each one leads to AI calls).
+  start_conversation: {20, 600},
+  # "Try again" after an AI failure, per conversation.
+  intake_retry: {5, 600},
+  # Town searches per conversation, and Nominatim's 1-request-per-second policy.
+  town_search: {20, 600},
+  nominatim: {1, 1},
+  # Wrong staff passwords per IP before logins are refused for a while.
+  staff_login_failures: {10, 900}
+
 # Simulated patient position (Yaya Centre, Nairobi) used for facility distances
 # when the browser doesn't share a real location.
 config :care_route, :demo_origin, %{lat: -1.2925, lng: 36.7870}

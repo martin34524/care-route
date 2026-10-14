@@ -5,14 +5,15 @@ defmodule CareRouteWeb.PatientLive.Start do
   """
   use CareRouteWeb, :live_view
 
-  alias CareRoute.Intake
+  alias CareRoute.{Intake, RateLimit}
   alias CareRoute.Intake.Phrases
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     {:ok,
      assign(socket,
        page_title: "Get care guidance",
+       client_ip: session["client_ip"],
        lang: "en",
        params: %{"name" => "", "age" => "", "contact" => "", "consent" => "false"},
        error: nil
@@ -28,31 +29,40 @@ defmodule CareRouteWeb.PatientLive.Start do
     lang = language(params, socket)
     socket = assign(socket, params: params, lang: lang)
 
-    if params["consent"] == "true" do
-      attrs = %{
-        name: blank_to_nil(params["name"]),
-        age: blank_to_nil(params["age"]),
-        contact: blank_to_nil(params["contact"]),
-        preferred_language: lang,
-        consented_at: DateTime.utc_now(:second)
-      }
+    cond do
+      params["consent"] != "true" ->
+        {:noreply, assign(socket, error: :consent_required)}
 
-      with {:ok, patient} <- Intake.create_patient(attrs),
-           {:ok, conversation} <- Intake.start_conversation(patient) do
-        {:noreply, push_navigate(socket, to: ~p"/intake/#{conversation.token}")}
-      else
-        {:error, %Ecto.Changeset{errors: errors}} ->
-          key =
-            cond do
-              Keyword.has_key?(errors, :age) -> :age_invalid
-              Keyword.has_key?(errors, :contact) -> :phone_invalid
-              true -> :consent_required
-            end
+      RateLimit.hit(:start_conversation, socket.assigns.client_ip) != :ok ->
+        {:noreply, assign(socket, error: :too_many_requests)}
 
-          {:noreply, assign(socket, error: key)}
-      end
+      true ->
+        start_conversation(socket, params, lang)
+    end
+  end
+
+  defp start_conversation(socket, params, lang) do
+    attrs = %{
+      name: blank_to_nil(params["name"]),
+      age: blank_to_nil(params["age"]),
+      contact: blank_to_nil(params["contact"]),
+      preferred_language: lang,
+      consented_at: DateTime.utc_now(:second)
+    }
+
+    with {:ok, patient} <- Intake.create_patient(attrs),
+         {:ok, conversation} <- Intake.start_conversation(patient) do
+      {:noreply, push_navigate(socket, to: ~p"/intake/#{conversation.token}")}
     else
-      {:noreply, assign(socket, error: :consent_required)}
+      {:error, %Ecto.Changeset{errors: errors}} ->
+        key =
+          cond do
+            Keyword.has_key?(errors, :age) -> :age_invalid
+            Keyword.has_key?(errors, :contact) -> :phone_invalid
+            true -> :consent_required
+          end
+
+        {:noreply, assign(socket, error: key)}
     end
   end
 

@@ -13,6 +13,7 @@ defmodule CareRoute.Application do
       {DNSCluster, query: Application.get_env(:care_route, :dns_cluster_query) || :ignore},
       {Oban, Application.fetch_env!(:care_route, Oban)},
       {Phoenix.PubSub, name: CareRoute.PubSub},
+      CareRoute.RateLimit,
       # Start a worker by calling: CareRoute.Worker.start_link(arg)
       # {CareRoute.Worker, arg},
       # Start to serve requests, typically the last entry

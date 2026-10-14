@@ -13,6 +13,11 @@ defmodule CareRoute.Intake do
 
   @network_topic "conversations"
 
+  # Long enough for a detailed answer, short enough to keep AI calls cheap.
+  @max_message_length 1000
+
+  def max_message_length, do: @max_message_length
+
   def topic(conversation_id), do: "conversation:#{conversation_id}"
 
   def subscribe(conversation_id) do
@@ -74,6 +79,7 @@ defmodule CareRoute.Intake do
 
     # Answering also clears any "AI unavailable" notice.
     with true <- content != "" || {:error, :empty},
+         true <- String.length(content) <= @max_message_length || {:error, :too_long},
          {:ok, conversation} <- save_transcript(conversation, dialogue(conversation) ++ [entry]),
          {:ok, _job} <- Oban.insert(IntakeWorker.new(%{conversation_id: conversation.id})) do
       {:ok, conversation}

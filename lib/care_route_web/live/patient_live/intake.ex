@@ -1,7 +1,7 @@
 defmodule CareRouteWeb.PatientLive.Intake do
   use CareRouteWeb, :live_view
 
-  alias CareRoute.Intake
+  alias CareRoute.{Intake, RateLimit}
   alias CareRoute.Intake.Phrases
 
   # Typical number of patient answers before a recommendation; drives the progress bar.
@@ -36,15 +36,29 @@ defmodule CareRouteWeb.PatientLive.Intake do
         # Bumping `sent` gives the input a new id, so the browser clears it.
         {:noreply, socket |> assign_conversation(conversation) |> update(:sent, &(&1 + 1))}
 
+      {:error, :too_long} ->
+        message =
+          Phrases.t(:message_too_long, socket.assigns.lang, max: Intake.max_message_length())
+
+        {:noreply, put_flash(socket, :error, message)}
+
       {:error, _} ->
         {:noreply, socket}
     end
   end
 
   def handle_event("retry", _params, socket) do
-    case Intake.retry_last_answer(socket.assigns.conversation) do
-      {:ok, conversation} -> {:noreply, assign_conversation(socket, conversation)}
-      {:error, _} -> {:noreply, socket}
+    %{conversation: conversation, lang: lang} = socket.assigns
+
+    with :ok <- RateLimit.hit(:intake_retry, conversation.id),
+         {:ok, conversation} <- Intake.retry_last_answer(conversation) do
+      {:noreply, assign_conversation(socket, conversation)}
+    else
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, Phrases.t(:too_many_requests, lang))}
+
+      {:error, _} ->
+        {:noreply, socket}
     end
   end
 
@@ -224,6 +238,7 @@ defmodule CareRouteWeb.PatientLive.Intake do
             name="message"
             type="text"
             autocomplete="off"
+            maxlength={Intake.max_message_length()}
             value=""
             disabled={@conversation.status != :gathering}
             placeholder={

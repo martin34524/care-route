@@ -35,5 +35,6 @@ defmodule CareRoute.Referrals.Referral do
     |> validate_required([:patient_id, :to_facility_id])
     |> foreign_key_constraint(:patient_id)
     |> foreign_key_constraint(:to_facility_id)
+    |> unique_constraint(:conversation_id)
   end
 end

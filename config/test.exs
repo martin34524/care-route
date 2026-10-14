@@ -53,5 +53,9 @@ config :care_route, :directory_req_options,
 # Staff pages are protected in tests; ConnCase adds these credentials by default.
 config :care_route, :staff_auth, username: "staff", password: "test-password"
 
+# No rate limits in tests, except where a test sets them. (A list would be
+# merged into config.exs's limits; `false` replaces them.)
+config :care_route, :rate_limits, false
+
 # Jobs are only enqueued in tests; run them with Oban.Testing helpers
 config :care_route, Oban, testing: :manual

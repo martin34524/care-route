@@ -17,6 +17,8 @@ defmodule CareRoute.Geocoder do
     cond do
       String.length(query) < 2 -> :not_found
       cached = cached(query) -> cached
+      # Nominatim allows one request per second from the whole app.
+      CareRoute.RateLimit.hit(:nominatim, :global) != :ok -> {:error, :busy}
       true -> query |> fetch() |> cache(query)
     end
   end

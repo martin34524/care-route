@@ -23,6 +23,42 @@ defmodule CareRoute.Intake.Phrases do
         "Kutokana na ulichoeleza, tafadhali tafuta huduma ya dharura sasa hivi. " <>
           "Ikiwa ni dharura, piga simu %{numbers} sasa hivi."
     },
+    crisis: %{
+      "en" =>
+        "I'm really sorry you're going through this, and I'm glad you told me. You don't " <>
+          "have to face it alone. If you might act on thoughts of harming yourself, or you " <>
+          "are in danger now, please call %{numbers} or go to the nearest hospital. If you " <>
+          "can, reach out to someone you trust and stay with them.%{crisis_lines}",
+      "sw" =>
+        "Pole sana kwa unayopitia, na asante kwa kuniambia. Huhitaji kukabiliana na hili " <>
+          "peke yako. Ikiwa unaweza kujidhuru, au uko hatarini sasa, tafadhali piga simu " <>
+          "%{numbers} au nenda hospitali iliyo karibu. Ikiwezekana, wasiliana na mtu " <>
+          "unayemwamini na ukae naye.%{crisis_lines}"
+    },
+    crisis_reason: %{
+      "en" =>
+        "You mentioned thoughts of harming yourself. You deserve support right now — " <>
+          "talking to someone today can help.",
+      "sw" =>
+        "Umetaja mawazo ya kujidhuru. Unastahili msaada sasa hivi — kuzungumza na mtu " <>
+          "leo kunaweza kusaidia."
+    },
+    crisis_line: %{
+      "en" => "You can also call %{label} on %{number}.",
+      "sw" => "Unaweza pia kupiga %{label} kwa %{number}."
+    },
+    message_too_long: %{
+      "en" => "That message is too long. Please keep it under %{max} characters.",
+      "sw" => "Ujumbe huo ni mrefu mno. Tafadhali usizidi herufi %{max}."
+    },
+    too_many_requests: %{
+      "en" =>
+        "Too many requests from this connection. Please wait a few minutes and try " <>
+          "again. If this is an emergency, call %{numbers}.",
+      "sw" =>
+        "Maombi mengi mno kutoka kwenye muunganisho huu. Tafadhali subiri dakika chache " <>
+          "kisha ujaribu tena. Ikiwa ni dharura, piga simu %{numbers}."
+    },
     ready: %{
       "en" => "Thanks — that’s everything I need. I have a recommendation ready for you.",
       "sw" =>
@@ -239,9 +275,27 @@ defmodule CareRoute.Intake.Phrases do
   def t(key, language) do
     text = @phrases |> Map.fetch!(key) |> Map.get(language, @phrases[key]["en"])
 
-    if String.contains?(text, "%{numbers}"),
-      do: String.replace(text, "%{numbers}", emergency_numbers_label(language)),
-      else: text
+    text
+    # Functions, so the labels (which use `t/2` themselves) are only built when needed.
+    |> String.replace("%{numbers}", fn _ -> emergency_numbers_label(language) end)
+    |> String.replace("%{crisis_lines}", fn _ -> crisis_lines_label(language) end)
+  end
+
+  # Configured in `config :care_route, :crisis_lines` as `[%{label: ..., number: ...}]`.
+  # Empty by default: only add lines you've verified are staffed.
+  defp crisis_lines_label(language) do
+    case Application.get_env(:care_route, :crisis_lines, []) do
+      [] ->
+        ""
+
+      lines ->
+        " " <>
+          Enum.map_join(
+            lines,
+            " ",
+            &t(:crisis_line, language, label: &1.label, number: &1.number)
+          )
+    end
   end
 
   @doc "The configured emergency numbers, e.g. [\"999\", \"112\"]."

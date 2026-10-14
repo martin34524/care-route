@@ -26,7 +26,7 @@ defmodule CareRouteWeb.Router do
     get "/", PageController, :home
     get "/privacy", PageController, :privacy
 
-    live_session :patient do
+    live_session :patient, session: {CareRouteWeb.ClientIP, :session, []} do
       live "/start", PatientLive.Start
       live "/intake/:token", PatientLive.Intake
       live "/intake/:token/results", PatientLive.Results
@@ -46,10 +46,33 @@ defmodule CareRouteWeb.Router do
     end
   end
 
+  # Basic auth, refusing an IP for a while after too many wrong passwords.
   defp staff_auth(conn, _opts) do
     case Application.get_env(:care_route, :staff_auth) do
       nil -> conn
-      credentials -> Plug.BasicAuth.basic_auth(conn, credentials)
+      credentials -> check_staff_credentials(conn, credentials)
+    end
+  end
+
+  defp check_staff_credentials(conn, credentials) do
+    ip = CareRouteWeb.ClientIP.get(conn)
+
+    if CareRoute.RateLimit.limited?(:staff_login_failures, ip) do
+      conn
+      |> put_resp_header("retry-after", "900")
+      |> send_resp(429, "Too many failed logins. Try again in 15 minutes.")
+      |> halt()
+    else
+      with {user, pass} <- Plug.BasicAuth.parse_basic_auth(conn),
+           true <- Plug.Crypto.secure_compare(user, credentials[:username]),
+           true <- Plug.Crypto.secure_compare(pass, credentials[:password]) do
+        conn
+      else
+        result ->
+          # A missing header is the browser asking for the login prompt, not a guess.
+          if result != :error, do: CareRoute.RateLimit.hit(:staff_login_failures, ip)
+          conn |> Plug.BasicAuth.request_basic_auth() |> halt()
+      end
     end
   end
 

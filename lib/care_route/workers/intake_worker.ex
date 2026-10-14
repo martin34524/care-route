@@ -14,7 +14,7 @@ defmodule CareRoute.Workers.IntakeWorker do
       states: [:available, :scheduled, :executing, :retryable]
     ]
 
-  alias CareRoute.{AI, Intake, Routing}
+  alias CareRoute.{AI, Intake, Routing, Safety}
   alias CareRoute.AI.{IntakePrompt, IntakeStub}
   alias CareRoute.Intake.Phrases
 
@@ -25,16 +25,29 @@ defmodule CareRoute.Workers.IntakeWorker do
     conversation = Intake.get_conversation!(id)
 
     # A later job may already have moved the conversation on.
-    if conversation.status == :gathering do
-      with {:ok, result} <- extract(conversation),
-           {:ok, _conversation} <- Routing.apply_extraction(conversation, result) do
+    cond do
+      conversation.status != :gathering ->
         :ok
-      else
-        {:error, reason} -> fail(conversation, reason, job)
-      end
-    else
-      :ok
+
+      # Danger words in the latest answer escalate at once, without the AI.
+      (screen = Safety.screen(latest_answer(conversation))) != :ok ->
+        {:ok, _conversation} = Routing.escalate_on_safety(conversation, screen)
+        :ok
+
+      true ->
+        with {:ok, result} <- extract(conversation),
+             {:ok, _conversation} <- Routing.apply_extraction(conversation, result) do
+          :ok
+        else
+          {:error, reason} -> fail(conversation, reason, job)
+        end
     end
+  end
+
+  defp latest_answer(%{transcript: transcript}) do
+    transcript
+    |> Enum.reverse()
+    |> Enum.find_value(&(&1["role"] == "patient" && &1["content"]))
   end
 
   # The patient is waiting, so retry quickly: 3s, then 6s.

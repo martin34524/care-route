@@ -5,7 +5,7 @@ defmodule CareRouteWeb.PatientLive.Results do
   """
   use CareRouteWeb, :live_view
 
-  alias CareRoute.{Facilities, Geocoder, Intake, Referrals}
+  alias CareRoute.{Facilities, Geocoder, Intake, RateLimit, Referrals}
   alias CareRoute.Intake.Phrases
 
   @building_icon "M4 21V7l8-4 8 4v14 M9 21v-6h6v6 M12 7v4 M10 9h4"
@@ -65,21 +65,30 @@ defmodule CareRouteWeb.PatientLive.Results do
           nearby_partner(facilities)
       end
 
-    if facility do
-      {:ok, referral} =
-        Referrals.create_referral(%{
-          patient_id: conversation.patient_id,
-          conversation_id: conversation.id,
-          to_facility_id: facility.id,
-          reason: "CareRoute recommendation: #{rec.urgency_level}"
-        })
-
+    with %{} <- facility,
+         {:ok, referral} <-
+           Referrals.create_referral(%{
+             patient_id: conversation.patient_id,
+             conversation_id: conversation.id,
+             to_facility_id: facility.id,
+             reason: "CareRoute recommendation: #{rec.urgency_level}"
+           }) do
       {:noreply,
        socket
        |> assign(referral: referral)
        |> push_event("facility-map:select", %{id: facility.id})}
     else
-      {:noreply, socket}
+      nil ->
+        {:noreply, socket}
+
+      # Already referred from another tab: show that referral instead.
+      {:error, %Ecto.Changeset{}} ->
+        referral = Referrals.get_referral_for_conversation(conversation.id)
+
+        {:noreply,
+         socket
+         |> assign(referral: referral)
+         |> push_event("facility-map:select", %{id: referral.to_facility_id})}
     end
   end
 
@@ -91,7 +100,17 @@ defmodule CareRouteWeb.PatientLive.Results do
   def handle_event("located", _params, socket), do: {:noreply, socket}
 
   def handle_event("find-town", %{"town" => town}, socket) do
-    case Geocoder.search(town) do
+    case RateLimit.hit(:town_search, socket.assigns.conversation.id) do
+      :ok ->
+        town_result(socket, Geocoder.search(town))
+
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, Phrases.t(:too_many_requests, socket.assigns.lang))}
+    end
+  end
+
+  defp town_result(socket, result) do
+    case result do
       {:ok, place} ->
         {:noreply,
          move_to(socket, %{lat: place.lat, lng: place.lng, source: "search", label: place.label})}

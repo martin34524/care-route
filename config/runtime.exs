@@ -28,6 +28,12 @@ if config_env() != :test do
     other -> raise "AI_PROVIDER must be gemini, claude or stub, got: #{inspect(other)}"
   end
 
+  # Behind Fly's proxy, the visitor's IP (for rate limits) is in fly-client-ip.
+  case System.get_env("CLIENT_IP_HEADER") || (System.get_env("FLY_APP_NAME") && "fly-client-ip") do
+    nil -> :ok
+    header -> config :care_route, :client_ip_header, String.downcase(header)
+  end
+
   # Basic auth for /clinician and /admin. Required in production; optional in dev.
   staff_user = System.get_env("STAFF_USERNAME")
   staff_pass = System.get_env("STAFF_PASSWORD")

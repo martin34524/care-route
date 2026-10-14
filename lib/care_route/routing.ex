@@ -124,6 +124,51 @@ defmodule CareRoute.Routing do
     end
   end
 
+  @doc """
+  Escalates on a hit from the `CareRoute.Safety` keyword check, without the AI.
+
+  `{:red_flags, labels}` goes to urgent care like an AI-detected red flag;
+  `:crisis` (possible self-harm) also goes to urgent care, with a crisis message.
+  The flags are added to the symptom report so the clinician sees why.
+  """
+  def escalate_on_safety(%Conversation{} = conversation, screen) do
+    language = language(conversation)
+
+    {flags, message, reasoning} =
+      case screen do
+        :crisis ->
+          {["possible self-harm risk (safety check)"], Phrases.t(:crisis, language),
+           [Phrases.t(:crisis_reason, language)]}
+
+        {:red_flags, labels} ->
+          {Enum.map(labels, &"#{&1} (safety check)"), Phrases.t(:urgent, language), []}
+      end
+
+    report = conversation.symptom_report
+
+    {:ok, _report} =
+      Intake.upsert_symptom_report(conversation, %{
+        symptoms: (report && report.symptoms) || [first_patient_message(conversation)],
+        duration: report && report.duration,
+        severity: report && report.severity,
+        red_flags: Enum.uniq(((report && report.red_flags) || []) ++ flags)
+      })
+
+    with {:ok, _rec} <-
+           create_recommendation(conversation, %{
+             urgency_level: :urgent,
+             reasoning: reasoning,
+             warning_signs: []
+           }),
+         {:ok, conversation} <- Intake.append_message(conversation, "assistant", message) do
+      Intake.update_status(conversation, :urgent)
+    end
+  end
+
+  defp first_patient_message(%Conversation{transcript: transcript}) do
+    Enum.find_value(transcript, "not reported", &(&1["role"] == "patient" && &1["content"]))
+  end
+
   defp language(%Conversation{patient: %{preferred_language: language}}), do: language
   defp language(%Conversation{}), do: "en"
 

@@ -51,7 +51,9 @@ export default {
     rec.onresult = e => {
       if (rec !== this.rec) return
       const spoken = Array.from(e.results, r => r[0].transcript).join("")
-      input.value = typed + spoken
+      // maxlength only limits typing, so trim dictated text to it too.
+      const max = input.maxLength > 0 ? input.maxLength : Infinity
+      input.value = (typed + spoken).slice(0, max)
       this.field("input_mode").value = "voice"
     }
     rec.onerror = e => {

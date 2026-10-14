@@ -14,8 +14,18 @@ an AI handoff summary, so they can triage in seconds.
 
 - **It never diagnoses.** Every prompt tells the model to route, not to name conditions,
   medications or doses, and every patient screen says so.
-- **Danger signs win.** Any red flag (difficulty breathing, chest pain, confusion…) sends the
-  patient straight to the urgent pathway, even if the rest of the AI's reply is malformed.
+- **Danger signs win.** Any red flag (difficulty breathing, chest pain, stroke signs,
+  bleeding in pregnancy…) sends the patient straight to the urgent pathway, even if the rest
+  of the AI's reply is malformed.
+- **A safety net that doesn't depend on the AI.** Every answer is first checked against a
+  fixed list of unmistakable danger phrases in English and Kiswahili (`CareRoute.Safety`),
+  with negations understood ("no chest pain" doesn't count). A match escalates at once,
+  without an AI call, so it works even when the AI misreads an answer or is down.
+- **Self-harm gets a human response.** Mentions of suicide or self-harm get a supportive
+  crisis message with the emergency numbers and an urgent recommendation. Verified crisis
+  lines can be added in `config :care_route, :crisis_lines`.
+- **Patient text is data, not instructions.** Both prompts tell the model to ignore
+  instructions inside patient answers, and the handoff note never lowers the urgency.
 - **The AI extracts; code decides.** The model returns structured JSON only. A
   deterministic state machine (`CareRoute.Routing`) branches on it, and rejects replies it
   can't act on so they're retried instead of guessed.
@@ -155,8 +165,10 @@ Then seed the partner facilities and import Kenya's facilities (both safe to re-
     fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.seed()"'
     fly ssh console -C '/app/bin/care_route eval "CareRoute.Release.import_facilities()"'
 
-Set `PHX_HOST` to the app's hostname (e.g. `care-route.fly.dev`). Phones only allow the
-microphone (voice answers) and location (nearest facilities) over HTTPS, which Fly provides.
+Set `PHX_HOST` to the app's hostname, e.g. `care-route.fly.dev`. LiveView refuses
+connections from any other host, which looks like a page that never finishes loading.
+Phones only allow the microphone (voice answers) and location (nearest facilities) over
+HTTPS, which Fly provides.
 
 ## Known limitations
 
@@ -167,7 +179,11 @@ microphone (voice answers) and location (nearest facilities) over HTTPS, which F
 - **Voice privacy.** Speech recognition runs in the browser; Chrome sends audio to Google's
   speech service. Browsers without the Web Speech API (e.g. Firefox) show typing only.
 - **Rate limits.** Gemini's free tier allows 5 requests per minute per model; use a paid key
-  for a live demo.
+  for a live demo. CareRoute's own limits (`config :care_route, :rate_limits`: new
+  conversations per IP, retries and town searches per conversation, wrong staff passwords
+  per IP) are kept in memory, so they reset on restart and apply per instance. On Fly the
+  visitor's IP comes from the `fly-client-ip` header (set automatically when
+  `FLY_APP_NAME` is present; `CLIENT_IP_HEADER` overrides it).
 
 **Demo backup plan.** With both `GEMINI_API_KEY` and `ANTHROPIC_API_KEY` set, a failed
 Gemini call is retried on Claude automatically. If the network or AI services are down,

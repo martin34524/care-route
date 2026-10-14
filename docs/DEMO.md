@@ -68,7 +68,8 @@ What to expect at each step comes from a rehearsal run against Gemini on
 2. Type:
    > My father is 58. He has chest pain spreading to his left arm and he is sweating.
 
-   *Expect (≈ 4 s):* no follow-up questions — "Based on what you've shared, please seek
+   *Expect (about a second):* no follow-up questions — the safety check catches "chest
+   pain" before the AI is even asked — "Based on what you've shared, please seek
    urgent care now… call 999 or 112 now." The progress bar turns red.
 3. **See my recommendation** → **Urgent care**, "High urgency · seek care now", the
    danger signs in red, and a big red **Call 999** button first. Real hospitals only,
@@ -102,7 +103,7 @@ What to expect at each step comes from a rehearsal run against Gemini on
 | An answer takes long | Narrate: "it's working out the next most useful question." Free-tier answers took up to 36 s in rehearsal — use a paid key. |
 | "I'm having trouble connecting… Try again" | Tap **Try again**. It re-asks the AI with the same answer. |
 | Summary shows "Summary unavailable" | Tap **Retry summary**; the transcript and rationale are already there to talk through. |
-| The AI service is down entirely | Switch to the offline stand-in and restart: `fly secrets set AI_PROVIDER=stub` (locally `AI_PROVIDER=stub mix phx.server`). The stand-in asks "How long…", "How severe…", then about breathing/chest pain/confusion; words like *breathing* or *chest* trigger the urgent path. Afterwards: `fly secrets unset AI_PROVIDER`. |
+| The AI service is down entirely | Switch to the offline stand-in and restart: `fly secrets set AI_PROVIDER=stub` (locally `AI_PROVIDER=stub mix phx.server`). The stand-in asks "How long…", "How severe…", then about breathing/chest pain/confusion; danger phrases like *chest pain* still trigger the urgent path (the safety check runs before any AI). Afterwards: `fly secrets unset AI_PROVIDER`. |
 | Venue network drops | Switch the phone and laptop to the phone's hotspot. |
 | Browser asks for the staff login | Credentials are in `.env` (`STAFF_USERNAME` / `STAFF_PASSWORD`). |
 | Mic button missing | The browser has no speech recognition (e.g. Firefox) — use Chrome, or type. |
