@@ -7,7 +7,6 @@ defmodule CareRouteWeb.PatientLive.Intake do
   # Typical number of patient answers before a recommendation; drives the progress bar.
   @expected_questions 4
 
-  @ai_icon "M12 3a5 5 0 0 0-5 5v3.2c0 .95-.37 1.86-1.04 2.54L5 15h14l-.96-1.26A3.6 3.6 0 0 1 17 11.2V8a5 5 0 0 0-5-5z"
   @patient_icon "M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z M4 20.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"
 
   @impl true
@@ -225,7 +224,22 @@ defmodule CareRouteWeb.PatientLive.Intake do
       </main>
 
       <%!-- Input bar --%>
-      <div class="sticky bottom-0 flex justify-center px-4 sm:px-6 py-[18px] bg-[linear-gradient(180deg,rgba(246,248,246,0)_0%,#F6F8F6_32%)]">
+      <div class="sticky bottom-0 flex flex-col items-center gap-2.5 px-4 sm:px-6 py-[18px] bg-[linear-gradient(180deg,rgba(246,248,246,0)_0%,#F6F8F6_32%)]">
+        <div
+          :if={replies = quick_replies(@conversation, @thinking?, @lang)}
+          id="quick-replies"
+          class="w-full max-w-[620px] flex flex-wrap gap-2"
+        >
+          <button
+            :for={reply <- replies}
+            type="button"
+            phx-click="send"
+            phx-value-message={reply}
+            class="bg-white border border-route/40 text-route-deep hover:bg-route-soft hover:border-route px-4 py-2 rounded-full text-[13.5px] font-semibold shadow-[0_2px_8px_rgba(22,32,30,0.05)]"
+          >
+            {reply}
+          </button>
+        </div>
         <.form
           for={@form}
           id="message-form"
@@ -304,7 +318,9 @@ defmodule CareRouteWeb.PatientLive.Intake do
         "size-[30px] rounded-full flex items-center justify-center shrink-0",
         if(@ai?, do: "bg-route-soft text-route", else: "bg-[#EDEFEC] text-[#5C665F]")
       ]}>
+        <.logo_icon :if={@ai?} class="size-4" />
         <svg
+          :if={!@ai?}
           width="15"
           height="15"
           viewBox="0 0 24 24"
@@ -315,7 +331,7 @@ defmodule CareRouteWeb.PatientLive.Intake do
           stroke-linejoin="round"
           aria-hidden="true"
         >
-          <path d={if @ai?, do: ai_icon(), else: patient_icon()}></path>
+          <path d={patient_icon()}></path>
         </svg>
       </div>
       <div class={[
@@ -345,6 +361,38 @@ defmodule CareRouteWeb.PatientLive.Intake do
     """
   end
 
+  # One-tap answers for questions with obvious options; nil when there are none.
+  defp quick_replies(
+         %{status: :gathering, transcript: [_greeting, _ | _] = transcript},
+         false,
+         lang
+       ) do
+    last = List.last(transcript)
+
+    if last["role"] == "assistant" and not Intake.notice?(last) do
+      last["content"] |> String.downcase() |> reply_options(lang)
+    end
+  end
+
+  defp quick_replies(_conversation, _thinking?, _lang), do: nil
+
+  @yes_no_starts ~w(is are am do does did has have can could was were will any je)
+
+  defp reply_options(question, lang) do
+    cond do
+      String.contains?(question, ["mild", "kidogo"]) and
+          String.contains?(question, ["severe", "kali"]) ->
+        Enum.map(~w(reply_mild reply_moderate reply_severe)a, &Phrases.t(&1, lang))
+
+      String.ends_with?(String.trim(question), "?") and
+          hd(String.split(question, ~r/[^\p{L}]+/u, trim: true) ++ [""]) in @yes_no_starts ->
+        Enum.map(~w(reply_yes reply_no reply_not_sure)a, &Phrases.t(&1, lang))
+
+      true ->
+        nil
+    end
+  end
+
   defp latest_assistant_text(%{transcript: transcript}) do
     transcript
     |> Enum.reverse()
@@ -367,6 +415,5 @@ defmodule CareRouteWeb.PatientLive.Intake do
     """
   end
 
-  defp ai_icon, do: @ai_icon
   defp patient_icon, do: @patient_icon
 end

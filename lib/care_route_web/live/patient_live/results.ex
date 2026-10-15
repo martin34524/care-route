@@ -42,6 +42,7 @@ defmodule CareRouteWeb.PatientLive.Results do
            lang: conversation.patient.preferred_language,
            origin: origin,
            facilities: facilities,
+           visible_others: 5,
            referral: Referrals.get_referral_for_conversation(conversation.id)
          )}
     end
@@ -338,93 +339,50 @@ defmodule CareRouteWeb.PatientLive.Results do
             <div data-map class="h-64 sm:h-80 rounded-2xl border border-line z-0"></div>
           </div>
 
-          <div class="flex flex-col gap-3.5">
-            <div
-              :for={{f, i} <- Enum.with_index(@facilities, 1)}
-              id={"facility-#{f.id}"}
-              class={[
-                "bg-white border rounded-2xl px-5 py-5 sm:px-6 sm:py-[22px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-5 transition-[box-shadow,border-color] duration-150 hover:border-[#CFDAD5] hover:shadow-[0_3px_14px_rgba(22,32,30,0.06)]",
-                if(@referral && @referral.to_facility_id == f.id,
-                  do: "border-route",
-                  else: "border-line"
-                )
-              ]}
-            >
-              <div class="flex gap-4 items-start min-w-0">
-                <div class="relative size-[42px] rounded-[11px] bg-route-soft flex items-center justify-center text-route shrink-0">
-                  <.stroke_icon class="size-5" d={@building_icon} stroke_width="1.7" />
-                  <span class={[
-                    "map-pin map-pin-#{f.type} absolute -top-2 -left-2 !size-5 !text-[10px] !border"
-                  ]}>
-                    {i}
-                  </span>
-                </div>
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-1">
-                    <span class="text-[15px] font-semibold">{f.name}</span>
-                    <span
-                      :if={f.partner}
-                      class="text-[10.5px] font-semibold px-[9px] py-[3px] rounded-full bg-route-soft text-route-deep"
-                    >
-                      {Phrases.t(:partner_badge, @lang)}
-                    </span>
-                    <% {badge, badge_class} = facility_badge(f, @lang) %>
-                    <span class={[
-                      "text-[10.5px] font-semibold px-[9px] py-[3px] rounded-full",
-                      badge_class
-                    ]}>
-                      {badge}
-                    </span>
-                  </div>
-                  <div class="text-[12.5px] text-[#6B756F] mb-0.5">
-                    {[f.address, f.distance_km && "#{f.distance_km} km"]
-                    |> Enum.reject(&is_nil/1)
-                    |> Enum.join(" · ")}
-                  </div>
-                  <div :if={f.services != []} class="text-[12.5px] text-[#8B958F]">
-                    {services_line(f)}
-                  </div>
-                  <div :if={f.opening_hours} class="text-[12.5px] text-[#8B958F]">
-                    {f.opening_hours}
-                  </div>
-                  <div :if={!f.partner} class="text-[12px] text-[#8B958F] mt-1">
-                    {Phrases.t(:not_connected, @lang)}
-                  </div>
-                </div>
-              </div>
-              <div class="flex gap-2.5 shrink-0">
-                <a
-                  :if={directions_url(f)}
-                  href={directions_url(f)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-[13px] font-semibold text-[#333E37] px-[15px] py-[9px] rounded-[9px] border border-line hover:bg-[#EAF1EE]"
-                >
-                  {Phrases.t(:directions, @lang)}
-                </a>
-                <a
-                  :if={f.phone}
-                  href={tel(f.phone)}
-                  class="text-[13px] font-semibold text-[#333E37] px-[15px] py-[9px] rounded-[9px] border border-line hover:bg-[#EAF1EE]"
-                >
-                  {Phrases.t(:call, @lang)}
-                </a>
-                <button
-                  :if={f.partner && !@referral}
-                  phx-click="refer"
-                  phx-value-facility-id={f.id}
-                  class="text-[13px] font-semibold text-white bg-route hover:bg-route-dark px-[15px] py-[9px] rounded-[9px]"
-                >
-                  {Phrases.t(:request_referral, @lang)}
-                </button>
-                <span
-                  :if={@referral && @referral.to_facility_id == f.id}
-                  class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-route-deep bg-route-soft px-[15px] py-[9px] rounded-[9px]"
-                >
-                  <.check_icon class="size-3.5" /> {Phrases.t(:referral_sent_short, @lang)}
-                </span>
-              </div>
+          <% {partners, others} =
+            @facilities |> Enum.with_index(1) |> Enum.split_with(fn {f, _i} -> f.partner end) %>
+
+          <div :if={partners != []} id="partner-facilities" class="mt-6">
+            <h3 class="text-sm font-semibold">{Phrases.t(:partners_heading, @lang)}</h3>
+            <p class="text-[12.5px] text-[#6B756F] mb-3">{Phrases.t(:partners_sub, @lang)}</p>
+            <div class="flex flex-col gap-3">
+              <.facility_card
+                :for={{f, i} <- partners}
+                facility={f}
+                number={i}
+                lang={@lang}
+                referral={@referral}
+                building_icon={@building_icon}
+              />
             </div>
+          </div>
+
+          <div :if={others != []} id="other-facilities" class="mt-7">
+            <h3 class="text-sm font-semibold">{Phrases.t(:others_heading, @lang)}</h3>
+            <p class="text-[12.5px] text-[#6B756F] mb-3">{Phrases.t(:not_connected, @lang)}</p>
+            <div class="flex flex-col gap-3">
+              <.facility_card
+                :for={{{f, i}, n} <- Enum.with_index(others)}
+                facility={f}
+                number={i}
+                lang={@lang}
+                referral={@referral}
+                building_icon={@building_icon}
+                class={if n >= @visible_others, do: "extra-facility hidden"}
+              />
+            </div>
+            <%!-- A new id per origin, so a new search starts collapsed again. --%>
+            <button
+              :if={length(others) > @visible_others}
+              id={"show-more-#{:erlang.phash2(@origin)}"}
+              type="button"
+              phx-click={
+                JS.remove_class("hidden", to: "#other-facilities .extra-facility") |> JS.hide()
+              }
+              class="mt-3 w-full text-[13.5px] font-semibold text-route-deep border border-line bg-white hover:bg-[#EAF1EE] py-3 rounded-[12px]"
+            >
+              {Phrases.t(:show_more, @lang, n: length(others) - @visible_others)}
+            </button>
           </div>
         </section>
 
@@ -442,6 +400,94 @@ defmodule CareRouteWeb.PatientLive.Results do
       </main>
 
       <Layouts.flash_group flash={@flash} />
+    </div>
+    """
+  end
+
+  attr :facility, :map, required: true
+  attr :number, :integer, required: true
+  attr :lang, :string, required: true
+  attr :referral, :any, required: true
+  attr :building_icon, :string, required: true
+  attr :class, :string, default: nil
+
+  defp facility_card(assigns) do
+    assigns = assign(assigns, :f, assigns.facility)
+
+    ~H"""
+    <div
+      id={"facility-#{@f.id}"}
+      class={[
+        "bg-white border rounded-2xl px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-5 transition-[box-shadow,border-color] duration-150 hover:border-[#CFDAD5] hover:shadow-[0_3px_14px_rgba(22,32,30,0.06)]",
+        if(@referral && @referral.to_facility_id == @f.id, do: "border-route", else: "border-line"),
+        @class
+      ]}
+    >
+      <div class="flex gap-3.5 items-start min-w-0">
+        <div class="relative size-[42px] rounded-[11px] bg-route-soft flex items-center justify-center text-route shrink-0">
+          <.stroke_icon class="size-5" d={@building_icon} stroke_width="1.7" />
+          <span class={"map-pin map-pin-#{@f.type} absolute -top-2 -left-2 !size-5 !text-[10px] !border"}>
+            {@number}
+          </span>
+        </div>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+            <span class="text-[15px] font-semibold leading-snug">{@f.name}</span>
+            <span
+              :if={@f.partner}
+              class="text-[10.5px] font-semibold px-[9px] py-[3px] rounded-full bg-route-soft text-route-deep"
+            >
+              {Phrases.t(:partner_badge, @lang)}
+            </span>
+            <% {badge, badge_class} = facility_badge(@f, @lang) %>
+            <span class={["text-[10.5px] font-semibold px-[9px] py-[3px] rounded-full", badge_class]}>
+              {badge}
+            </span>
+          </div>
+          <div class="text-[12.5px] text-[#6B756F]">
+            <span :if={@f.distance_km} class="font-semibold text-ink">{@f.distance_km} km</span>
+            <span :if={@f.distance_km && @f.address}> · </span>{@f.address}
+          </div>
+          <div :if={@f.services != []} class="text-[12.5px] text-[#8B958F]">
+            {services_line(@f)}
+          </div>
+          <div :if={@f.opening_hours} class="text-[12.5px] text-[#8B958F]">
+            {@f.opening_hours}
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 shrink-0 sm:pl-0 pl-[56px]">
+        <a
+          :if={directions_url(@f)}
+          href={directions_url(@f)}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-[13px] font-semibold text-[#333E37] px-3.5 py-[9px] rounded-[9px] border border-line hover:bg-[#EAF1EE]"
+        >
+          {Phrases.t(:directions, @lang)}
+        </a>
+        <a
+          :if={@f.phone}
+          href={tel(@f.phone)}
+          class="text-[13px] font-semibold text-[#333E37] px-3.5 py-[9px] rounded-[9px] border border-line hover:bg-[#EAF1EE]"
+        >
+          {Phrases.t(:call, @lang)}
+        </a>
+        <button
+          :if={@f.partner && !@referral}
+          phx-click="refer"
+          phx-value-facility-id={@f.id}
+          class="text-[13px] font-semibold text-white bg-route hover:bg-route-dark px-3.5 py-[9px] rounded-[9px]"
+        >
+          {Phrases.t(:request_referral, @lang)}
+        </button>
+        <span
+          :if={@referral && @referral.to_facility_id == @f.id}
+          class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-route-deep bg-route-soft px-3.5 py-[9px] rounded-[9px]"
+        >
+          <.check_icon class="size-3.5" /> {Phrases.t(:referral_sent_short, @lang)}
+        </span>
+      </div>
     </div>
     """
   end

@@ -96,69 +96,66 @@
       </div>
     </div>
 
-    <div class="bg-route-soft rounded-3xl p-10 flex items-center justify-center min-h-[300px] lg:min-h-[380px] text-route">
-      <svg viewBox="0 0 320 320" class="w-full h-full max-w-[320px]" aria-hidden="true">
-        <circle cx="80" cy="250" r="9" fill="#FFFFFF" stroke="currentColor" stroke-width="2.5">
-        </circle>
+    <%!-- Product preview: a question, a spoken answer, and where it leads. --%>
+    <div
+      class="relative bg-route-soft rounded-3xl px-6 py-10 sm:p-12 flex items-center justify-center overflow-hidden"
+      aria-hidden="true"
+    >
+      <svg
+        viewBox="0 0 400 400"
+        preserveAspectRatio="none"
+        class="absolute inset-0 w-full h-full text-route opacity-40"
+      >
         <path
-          d="M80 250 C 130 210, 150 180, 175 150"
+          d="M30 370 C 120 300, 90 210, 200 200 S 330 90, 380 30"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
-          stroke-dasharray="3 6"
-          opacity="0.6"
-        >
-        </path>
-        <circle cx="175" cy="150" r="7" fill="currentColor"></circle>
-        <path
-          d="M175 150 C 195 120, 210 100, 245 75"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-dasharray="3 6"
-          opacity="0.6"
-        >
-        </path>
-        <circle cx="245" cy="75" r="11" fill="#FFFFFF" stroke="currentColor" stroke-width="3">
-        </circle>
-        <path
-          d="M245 68v14M238 75h14"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-        >
-        </path>
-        <circle
-          cx="245"
-          cy="75"
-          r="34"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.4"
-          opacity="0.35"
-        >
-        </circle>
-        <circle
-          cx="245"
-          cy="75"
-          r="52"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1"
-          opacity="0.2"
-        >
-        </circle>
-        <circle
-          cx="80"
-          cy="250"
-          r="34"
-          fill="none"
-          stroke="#175650"
-          stroke-width="1.2"
-          opacity="0.25"
-        >
-        </circle>
+          stroke-dasharray="3 7"
+        />
       </svg>
+
+      <div class="relative w-full max-w-[320px] bg-white rounded-[26px] border border-line shadow-[0_18px_50px_rgba(22,32,30,0.12)] p-4 flex flex-col gap-3">
+        <div class="flex items-center gap-2 px-1">
+          <.logo_icon class="size-4 text-route" />
+          <div class="grow h-1 rounded-full bg-line overflow-hidden">
+            <div class="h-full w-3/4 rounded-full bg-route"></div>
+          </div>
+          <span class="text-[10px] text-[#8B958F]">3 of 4</span>
+        </div>
+
+        <div class="self-start max-w-[85%] bg-paper border border-line rounded-[4px_14px_14px_14px] px-3 py-2 text-[12.5px] leading-snug">
+          Is she drinking fluids and having wet nappies as usual?
+        </div>
+        <div class="self-end max-w-[85%] bg-route text-white rounded-[14px_4px_14px_14px] px-3 py-2 text-[12.5px] leading-snug flex items-end gap-1.5">
+          <span>Yes, she’s drinking well and still playing.</span>
+          <.stroke_icon
+            class="size-3 shrink-0 opacity-75 mb-0.5"
+            d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z M5.5 11a6.5 6.5 0 0 0 13 0 M12 17.5V21"
+          />
+        </div>
+
+        <div class="rounded-2xl border border-line p-3.5 mt-1">
+          <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FBF3EA] text-[#9A6B1F] text-[10px] font-semibold mb-1.5">
+            <.warning_icon class="size-2.5" /> Moderate urgency
+          </div>
+          <div class="font-display font-bold text-[20px] leading-tight mb-2.5">Clinic visit</div>
+          <div class="flex items-center gap-2.5 rounded-xl bg-paper px-2.5 py-2">
+            <span class="map-pin map-pin-clinic !size-6 !text-[10px] shrink-0">1</span>
+            <div class="min-w-0 grow">
+              <div class="text-[12px] font-semibold truncate">Kilimani Community Clinic</div>
+              <div class="text-[10.5px] text-[#6B756F]">0.5 km · CareRoute partner</div>
+            </div>
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-route-deep bg-route-soft px-2 py-1 rounded-md shrink-0">
+              <.check_icon class="size-2.5" /> Sent
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden sm:flex absolute bottom-6 right-6 items-center gap-2 bg-white rounded-full border border-line shadow-[0_6px_20px_rgba(22,32,30,0.08)] pl-2.5 pr-3.5 py-1.5 text-[11.5px] font-semibold">
+        <span class="size-2 rounded-full bg-route animate-pulse"></span> Clinic notified instantly
+      </div>
     </div>
   </section>
 

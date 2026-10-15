@@ -77,6 +77,38 @@ defmodule CareRouteWeb.FacilityMapTest do
     assert render(view) =~ "Facility data © OpenStreetMap contributors"
   end
 
+  test "partners come first, and a long list of other facilities is collapsed", %{
+    view: view,
+    partner: partner,
+    directory: directory
+  } do
+    assert has_element?(view, "#partner-facilities #facility-#{partner.id}")
+    assert has_element?(view, "#partner-facilities", "Can receive your referral")
+    # Only two others here, so nothing to collapse.
+    refute has_element?(view, "#other-facilities .extra-facility")
+    refute has_element?(view, "#other-facilities button", "more")
+
+    for n <- 1..6 do
+      Facilities.create_facility(%{
+        name: "Nearby Hospital #{n}",
+        type: :hospital,
+        source: "osm",
+        source_id: "node/near-#{n}",
+        latitude: -1.2921 + n / 1000,
+        longitude: 36.8219
+      })
+    end
+
+    render_hook(view, "located", %{"lat" => -1.2921, "lng" => 36.8219})
+
+    # Only the nearest 5 show; the rest start hidden behind a "Show N more" button.
+    html = view |> element("#other-facilities") |> render()
+    assert html =~ ~r/Show \d+ more/
+    assert has_element?(view, "#other-facilities .extra-facility.hidden")
+    # The directory hospital is further than the six new ones.
+    assert has_element?(view, "#facility-#{directory.id}.extra-facility.hidden")
+  end
+
   test "nearby partners are shown even when many other places are closer", %{partner: partner} do
     # Twelve directory hospitals right next to the Nairobi origin, all nearer than the partner.
     for i <- 1..12 do
@@ -106,7 +138,9 @@ defmodule CareRouteWeb.FacilityMapTest do
     directory: directory
   } do
     assert has_element?(view, ~s(#facility-#{directory.id} a[href="tel:+254201234567"]), "Call")
-    assert has_element?(view, "#facility-#{directory.id}", "Not connected to CareRoute yet")
+    # Listed under "Other facilities nearby", whose note explains they aren't connected.
+    assert has_element?(view, "#other-facilities #facility-#{directory.id}")
+    assert has_element?(view, "#other-facilities", "Not connected to CareRoute yet")
     refute has_element?(view, "#facility-#{directory.id} button", "Request referral")
 
     # A crafted event can't refer to it either.

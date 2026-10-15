@@ -139,6 +139,13 @@ defmodule CareRoute.Intake.Phrases do
           "jibu lako tena. Ikiwa ni dharura, piga simu %{numbers}."
     },
     try_again: %{"en" => "Try again", "sw" => "Jaribu tena"},
+    # One-tap answers
+    reply_yes: %{"en" => "Yes", "sw" => "Ndiyo"},
+    reply_no: %{"en" => "No", "sw" => "Hapana"},
+    reply_not_sure: %{"en" => "Not sure", "sw" => "Sina uhakika"},
+    reply_mild: %{"en" => "Mild", "sw" => "Kidogo"},
+    reply_moderate: %{"en" => "Moderate", "sw" => "Wastani"},
+    reply_severe: %{"en" => "Severe", "sw" => "Kali"},
     call_now: %{"en" => "Call %{number}", "sw" => "Piga %{number}"},
     or: %{"en" => "or", "sw" => "au"},
     # Reading questions aloud
@@ -219,6 +226,16 @@ defmodule CareRoute.Intake.Phrases do
       "sw" => "Bado hakijaunganishwa na CareRoute — piga simu kwanza au nenda moja kwa moja."
     },
     call: %{"en" => "Call", "sw" => "Piga simu"},
+    partners_heading: %{
+      "en" => "Can receive your referral",
+      "sw" => "Vinaweza kupokea rufaa yako"
+    },
+    partners_sub: %{
+      "en" => "CareRoute partners — your answers reach them before you arrive.",
+      "sw" => "Washirika wa CareRoute — majibu yako yanawafikia kabla hujafika."
+    },
+    others_heading: %{"en" => "Other facilities nearby", "sw" => "Vituo vingine vilivyo karibu"},
+    show_more: %{"en" => "Show %{n} more", "sw" => "Onyesha %{n} zaidi"},
     near_device: %{"en" => "Near your location", "sw" => "Karibu na mahali ulipo"},
     near_default: %{
       "en" => "Near central Nairobi — share your location or search a town",
