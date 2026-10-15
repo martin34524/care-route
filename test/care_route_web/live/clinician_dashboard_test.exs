@@ -141,4 +141,30 @@ defmodule CareRouteWeb.ClinicianDashboardTest do
     assert has_element?(view, "#referral-#{carl.id}")
     refute has_element?(view, "#referral-#{rita.id}")
   end
+
+  test "with nothing picked, the most urgent waiting referral opens and is counted", %{
+    conn: conn,
+    clinic: clinic,
+    hospital: hospital
+  } do
+    referral("Rita", clinic, :clinic, ["sore throat"])
+    handled = referral("Hana", hospital, :urgent, ["seizure"])
+    {:ok, _} = Referrals.update_referral(handled, %{status: :accepted})
+    umar = referral("Umar", hospital, :urgent, ["chest pain"])
+
+    {:ok, view, _} = live(conn, ~p"/clinician")
+    # Hana is urgent too, but already accepted.
+    assert has_element?(view, "#referral-detail", "Umar")
+    assert has_element?(view, "#stat-urgent", "1")
+    assert has_element?(view, "#referral-#{umar.id} td[class*=inset]")
+
+    view |> element("#referral-detail #accept-referral") |> render_click()
+    assert has_element?(view, "#stat-urgent", "0")
+  end
+
+  test "an empty queue shows the placeholder instead of a detail panel", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/clinician")
+    refute has_element?(view, "#referral-detail")
+    assert has_element?(view, "#viewer-menu summary", "All facilities")
+  end
 end

@@ -33,6 +33,8 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
        search: "",
        tab: "all",
        new_ids: MapSet.new(),
+       selected: nil,
+       auto_selected: false,
        now: DateTime.utc_now()
      )}
   end
@@ -46,17 +48,31 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
       |> assign(viewer: viewer)
       |> load_referrals()
 
-    selected =
-      case params do
-        %{"id" => id} -> Referrals.get_referral!(id)
-        _ -> nil
-      end
+    case params do
+      %{"id" => id} ->
+        selected = Referrals.get_referral!(id)
 
-    {:noreply,
-     socket
-     |> assign(selected: selected)
-     |> update(:new_ids, &if(selected, do: MapSet.delete(&1, selected.id), else: &1))}
+        {:noreply,
+         socket
+         |> assign(selected: selected, auto_selected: false)
+         |> update(:new_ids, &MapSet.delete(&1, selected.id))}
+
+      _ ->
+        {:noreply, socket |> assign(selected: nil) |> auto_select()}
+    end
   end
+
+  # With nothing picked, the detail panel shows the referral at the top of the
+  # queue that still needs a response, so the most urgent case is one glance away.
+  # (Wide screens only; on a phone it would push the queue off screen.)
+  defp auto_select(%{assigns: %{selected: nil}} = socket) do
+    %{referrals: referrals, tab: tab, search: search} = socket.assigns
+    rows = shown(referrals, tab, search)
+    first = Enum.find(rows, &(&1.status == :pending)) || List.first(rows)
+    assign(socket, selected: first, auto_selected: first != nil)
+  end
+
+  defp auto_select(socket), do: socket
 
   defp viewer(_clinicians, nil), do: nil
   defp viewer(clinicians, id), do: Enum.find(clinicians, &(to_string(&1.id) == id))
@@ -122,7 +138,8 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
          "New referral: #{patient_label(referral)} → #{referral.to_facility.name}"
        )
        |> update(:new_ids, &MapSet.put(&1, referral.id))
-       |> load_referrals()}
+       |> load_referrals()
+       |> auto_select()}
     else
       {:noreply, socket}
     end
@@ -158,6 +175,9 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
     |> Enum.join(" ")
     |> String.downcase()
   end
+
+  defp urgent_waiting(referrals),
+    do: Enum.count(referrals, &(&1.status == :pending and urgency(&1) == :urgent))
 
   defp count(referrals, "all"), do: length(referrals)
   defp count(referrals, status), do: Enum.count(referrals, &(to_string(&1.status) == status))
@@ -231,8 +251,6 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
 
   defp rationale(_referral), do: nil
 
-  defp initials(nil), do: "All"
-
   defp initials(%{name: name}) do
     name
     |> String.replace(~r/^(Dr|Nurse)\.?\s+/, "")
@@ -296,9 +314,17 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
             <details id="viewer-menu" class="relative">
               <summary
                 aria-label="View as clinician"
-                class="list-none cursor-pointer size-9 rounded-full bg-route-soft flex items-center justify-center text-route text-[13px] font-bold [&::-webkit-details-marker]:hidden"
+                title="Switch whose queue you're viewing"
+                class="list-none cursor-pointer flex items-center gap-2 rounded-full border border-line bg-white hover:bg-paper pl-1 pr-3 py-1 [&::-webkit-details-marker]:hidden"
               >
-                {initials(@viewer)}
+                <span class="size-7 rounded-full bg-route-soft flex items-center justify-center text-route text-[11.5px] font-bold">
+                  <.icon :if={!@viewer} name="hero-building-office-2" class="size-4" />
+                  {@viewer && initials(@viewer)}
+                </span>
+                <span class="hidden sm:block text-[12.5px] font-semibold text-[#333E37] max-w-[140px] truncate">
+                  {if @viewer, do: @viewer.name, else: "All facilities"}
+                </span>
+                <.icon name="hero-chevron-down-mini" class="size-4 text-[#8B958F]" />
               </summary>
               <div class="absolute right-0 mt-2 w-64 bg-white border border-line rounded-xl shadow-[0_10px_34px_rgba(22,32,30,0.12)] p-1.5 z-10">
                 <div class="px-3 pt-2 pb-1.5 text-[10.5px] font-semibold tracking-[0.05em] uppercase text-[#A9B3AD]">
@@ -333,7 +359,13 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
 
         <div class="px-4 sm:px-8 pt-6 pb-11 flex flex-col gap-[22px]">
           <%!-- Stats --%>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <.stat
+              id="stat-urgent"
+              label="Urgent, awaiting response"
+              value={urgent_waiting(@referrals)}
+              alert={urgent_waiting(@referrals) > 0}
+            />
             <.stat id="stat-new-today" label="New referrals today" value={@stats.new_today} />
             <.stat
               id="stat-response"
@@ -376,9 +408,9 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
                         :for={
                           {label, pad} <- [
                             {"Patient", "px-[18px]"},
-                            {"Level", "px-3"},
-                            {"Received", "px-3"},
-                            {"Status", "px-[18px]"}
+                            {"Level", "hidden sm:table-cell px-3"},
+                            {"Received", "hidden sm:table-cell px-3"},
+                            {"Status", "hidden sm:table-cell px-[18px]"}
                           ]
                         }
                         class={[
@@ -398,13 +430,25 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
                       class={[
                         "border-b border-[#F2F4F2] cursor-pointer",
                         cond do
-                          @selected && @selected.id == r.id -> "bg-route-soft"
-                          MapSet.member?(@new_ids, r.id) -> "bg-[#F1F8F5] hover:bg-paper"
-                          true -> "hover:bg-paper"
+                          @selected && @selected.id == r.id && @auto_selected ->
+                            "xl:bg-route-soft hover:bg-paper"
+
+                          @selected && @selected.id == r.id ->
+                            "bg-route-soft"
+
+                          MapSet.member?(@new_ids, r.id) ->
+                            "bg-[#F1F8F5] hover:bg-paper"
+
+                          true ->
+                            "hover:bg-paper"
                         end
                       ]}
                     >
-                      <td class="px-[18px] py-[13px] max-w-[360px]">
+                      <td class={[
+                        "px-[18px] py-[13px] max-w-[360px]",
+                        urgency(r) == :urgent && r.status != :completed &&
+                          "shadow-[inset_3px_0_0_#C4553A]"
+                      ]}>
                         <div class="flex items-center gap-2 text-[13px] font-semibold">
                           <span
                             :if={MapSet.member?(@new_ids, r.id)}
@@ -416,8 +460,20 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
                         <div class="text-[11.5px] text-[#8B958F] mt-0.5 truncate">
                           {complaint(r)}<span :if={!@viewer}> · {r.to_facility.name}</span>
                         </div>
+                        <div class="sm:hidden flex items-center gap-2 mt-1.5 text-[11.5px] text-[#6B756F]">
+                          <span class={[
+                            "text-[10.5px] font-semibold px-[9px] py-0.5 rounded-full",
+                            level_badge(urgency(r))
+                          ]}>
+                            {level_label(urgency(r))}
+                          </span>
+                          {ago(r.inserted_at, @now)} ·
+                          <span class={["font-semibold", status_class(r.status)]}>
+                            {status_label(r.status)}
+                          </span>
+                        </div>
                       </td>
-                      <td class="px-3 py-[13px]">
+                      <td class="hidden sm:table-cell px-3 py-[13px]">
                         <span class={[
                           "text-[10.5px] font-semibold px-[9px] py-1 rounded-full whitespace-nowrap",
                           level_badge(urgency(r))
@@ -425,10 +481,10 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
                           {level_label(urgency(r))}
                         </span>
                       </td>
-                      <td class="px-3 py-[13px] text-[12.5px] text-[#6B756F] whitespace-nowrap">
+                      <td class="hidden sm:table-cell px-3 py-[13px] text-[12.5px] text-[#6B756F] whitespace-nowrap">
                         {ago(r.inserted_at, @now)}
                       </td>
-                      <td class="px-[18px] py-[13px]">
+                      <td class="hidden sm:table-cell px-[18px] py-[13px]">
                         <span class={["text-[11.5px] font-semibold", status_class(r.status)]}>
                           {status_label(r.status)}
                         </span>
@@ -453,6 +509,7 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
               referral={@selected}
               now={@now}
               facilities={@facilities}
+              class={@auto_selected && "hidden xl:block"}
             />
             <div
               :if={!@selected}
@@ -472,14 +529,26 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
   attr :id, :string, required: true
   attr :label, :string, required: true
   attr :value, :any, required: true
+  attr :alert, :boolean, default: false
 
   defp stat(assigns) do
     ~H"""
-    <div id={@id} class="bg-white border border-line rounded-[14px] px-5 py-[18px]">
-      <div class="text-[11.5px] font-semibold tracking-[0.04em] uppercase text-[#8B958F] mb-2.5">
+    <div
+      id={@id}
+      class={[
+        "border rounded-[14px] px-4 sm:px-5 py-4 sm:py-[18px]",
+        if(@alert, do: "bg-[#FBEAE6] border-[#F1CFC6]", else: "bg-white border-line")
+      ]}
+    >
+      <div class={[
+        "text-[11px] sm:text-[11.5px] font-semibold tracking-[0.04em] uppercase mb-2 sm:mb-2.5",
+        if(@alert, do: "text-[#A23F26]", else: "text-[#8B958F]")
+      ]}>
         {@label}
       </div>
-      <div class="font-display text-[25px] font-bold">{@value}</div>
+      <div class={["font-display text-[22px] sm:text-[25px] font-bold", @alert && "text-[#A23F26]"]}>
+        {@value}
+      </div>
     </div>
     """
   end
@@ -487,12 +556,13 @@ defmodule CareRouteWeb.ClinicianLive.Dashboard do
   attr :referral, :map, required: true
   attr :now, :any, required: true
   attr :facilities, :list, required: true
+  attr :class, :any, default: nil
 
   defp detail(assigns) do
     ~H"""
     <section
       id="referral-detail"
-      class="bg-white border border-line rounded-2xl p-[22px] xl:sticky xl:top-6"
+      class={["bg-white border border-line rounded-2xl p-[22px] xl:sticky xl:top-6", @class]}
     >
       <div class="flex items-center justify-between gap-3 mb-3.5">
         <h2 class="text-[15px] font-semibold">{patient_label(@referral)}</h2>
