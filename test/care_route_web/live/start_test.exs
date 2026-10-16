@@ -88,4 +88,28 @@ defmodule CareRouteWeb.StartTest do
     {:ok, view, _} = live(conn, ~p"/intake/#{conversation.token}")
     assert has_element?(view, ~s(#start-over[href="/start"]), "Start over")
   end
+
+  test "each detail can be given by voice, in the chosen language", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/start")
+
+    for {field, kind} <- [{"name", "name"}, {"age", "number"}, {"contact", "tel"}] do
+      assert has_element?(
+               view,
+               "#voice-#{field}[phx-hook=VoiceInput][data-target=patient-#{field}][data-kind=#{kind}][data-lang=en-KE]"
+             )
+    end
+
+    view |> form("#start-form", patient: %{preferred_language: "sw"}) |> render_change()
+    assert has_element?(view, "#voice-age[data-lang=sw-KE]")
+  end
+
+  test "a voice problem is explained under the form", %{conn: conn} do
+    {:ok, view, _} = live(conn, ~p"/start")
+
+    render_hook(view, "voice-error", %{"error" => "no-number"})
+    assert has_element?(view, "#start-error", "I didn't hear a number")
+
+    render_hook(view, "voice-error", %{"error" => "not-allowed"})
+    assert has_element?(view, "#start-error", "Microphone access is blocked")
+  end
 end

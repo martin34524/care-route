@@ -166,6 +166,11 @@ defmodule CareRoute.Intake.Phrases do
       "en" => "I didn't catch that. Try again, or type your answer.",
       "sw" => "Sikukusikia vizuri. Jaribu tena, au andika jibu lako."
     },
+    voice_no_number: %{
+      "en" => "I didn't hear a number. Try again, or type the age.",
+      "sw" => "Sikusikia nambari. Jaribu tena, au andika umri."
+    },
+    voice_field: %{"en" => "Say it instead of typing", "sw" => "Sema badala ya kuandika"},
     voice_failed: %{
       "en" => "Voice input isn't working right now. Please type your answer.",
       "sw" => "Kujibu kwa sauti hakufanyi kazi sasa hivi. Tafadhali andika jibu lako."
@@ -285,6 +290,19 @@ defmodule CareRoute.Intake.Phrases do
   }
 
   def languages, do: @languages
+
+  @doc "Speech recognition locale for a patient language."
+  def speech_lang("sw"), do: "sw-KE"
+  def speech_lang(_language), do: "en-KE"
+
+  @doc "The phrase key explaining a speech recognition error reported by the browser."
+  def voice_error_key(error)
+      when error in ["not-allowed", "service-not-allowed", "audio-capture"],
+      do: :voice_blocked
+
+  def voice_error_key("no-speech"), do: :voice_no_speech
+  def voice_error_key("no-number"), do: :voice_no_number
+  def voice_error_key(_error), do: :voice_failed
 
   def language_name(code), do: Map.get(@languages, code, "English")
 

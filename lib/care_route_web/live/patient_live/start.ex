@@ -41,6 +41,11 @@ defmodule CareRouteWeb.PatientLive.Start do
     end
   end
 
+  # Reported by the VoiceInput hook when speech recognition fails.
+  def handle_event("voice-error", %{"error" => error}, socket) do
+    {:noreply, assign(socket, error: Phrases.voice_error_key(error))}
+  end
+
   defp start_conversation(socket, params, lang) do
     attrs = %{
       name: blank_to_nil(params["name"]),
@@ -130,52 +135,79 @@ defmodule CareRouteWeb.PatientLive.Start do
               <label for="patient-name" class="block text-[13px] font-semibold mb-1.5">
                 {Phrases.t(:field_name, @lang)}
               </label>
-              <input
-                id="patient-name"
-                name="patient[name]"
-                type="text"
-                maxlength="80"
-                autocomplete="given-name"
-                value={@params["name"]}
-                class="w-full rounded-[10px] border border-line px-3.5 py-2.5 text-sm outline-none focus:border-route"
-              />
+              <div class="flex items-center gap-2">
+                <input
+                  id="patient-name"
+                  name="patient[name]"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="given-name"
+                  value={@params["name"]}
+                  class="w-full rounded-[10px] border border-line px-3.5 py-2.5 text-sm outline-none focus:border-route"
+                />
+                <.voice_button
+                  id="voice-name"
+                  lang={@lang}
+                  target="patient-name"
+                  kind="name"
+                  label={"#{Phrases.t(:voice_field, @lang)}: #{Phrases.t(:field_name, @lang)}"}
+                />
+              </div>
             </div>
 
             <div>
               <label for="patient-age" class="block text-[13px] font-semibold mb-1.5">
                 {Phrases.t(:field_age, @lang)}
               </label>
-              <input
-                id="patient-age"
-                name="patient[age]"
-                type="number"
-                inputmode="numeric"
-                min="0"
-                max="129"
-                value={@params["age"]}
-                class={[
-                  "w-full rounded-[10px] border px-3.5 py-2.5 text-sm outline-none focus:border-route",
-                  if(@error == :age_invalid, do: "border-[#A23F26]", else: "border-line")
-                ]}
-              />
+              <div class="flex items-center gap-2">
+                <input
+                  id="patient-age"
+                  name="patient[age]"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max="129"
+                  value={@params["age"]}
+                  class={[
+                    "w-full rounded-[10px] border px-3.5 py-2.5 text-sm outline-none focus:border-route",
+                    if(@error == :age_invalid, do: "border-[#A23F26]", else: "border-line")
+                  ]}
+                />
+                <.voice_button
+                  id="voice-age"
+                  lang={@lang}
+                  target="patient-age"
+                  kind="number"
+                  label={"#{Phrases.t(:voice_field, @lang)}: #{Phrases.t(:field_age, @lang)}"}
+                />
+              </div>
             </div>
 
             <div>
               <label for="patient-contact" class="block text-[13px] font-semibold mb-1.5">
                 {Phrases.t(:field_phone, @lang)}
               </label>
-              <input
-                id="patient-contact"
-                name="patient[contact]"
-                type="tel"
-                autocomplete="tel"
-                maxlength="20"
-                value={@params["contact"]}
-                class={[
-                  "w-full rounded-[10px] border px-3.5 py-2.5 text-sm outline-none focus:border-route",
-                  if(@error == :phone_invalid, do: "border-[#A23F26]", else: "border-line")
-                ]}
-              />
+              <div class="flex items-center gap-2">
+                <input
+                  id="patient-contact"
+                  name="patient[contact]"
+                  type="tel"
+                  autocomplete="tel"
+                  maxlength="20"
+                  value={@params["contact"]}
+                  class={[
+                    "w-full rounded-[10px] border px-3.5 py-2.5 text-sm outline-none focus:border-route",
+                    if(@error == :phone_invalid, do: "border-[#A23F26]", else: "border-line")
+                  ]}
+                />
+                <.voice_button
+                  id="voice-contact"
+                  lang={@lang}
+                  target="patient-contact"
+                  kind="tel"
+                  label={"#{Phrases.t(:voice_field, @lang)}: #{Phrases.t(:field_phone, @lang)}"}
+                />
+              </div>
             </div>
 
             <div class="rounded-[14px] bg-paper border border-line px-4 py-3.5">

@@ -129,6 +129,58 @@ defmodule CareRouteWeb.BrandComponents do
     """
   end
 
+  attr :class, :string, default: nil
+
+  def mic_icon(assigns) do
+    ~H"""
+    <.stroke_icon
+      class={@class}
+      d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z M5.5 11a6.5 6.5 0 0 0 13 0 M12 17.5V21 M8.5 21h7"
+      stroke_width="2"
+    />
+    """
+  end
+
+  @doc """
+  Microphone button for the `VoiceInput` hook (assets/js/hooks/voice_input.js).
+  Hidden until the hook finds speech recognition in the browser.
+
+  Without `target` it dictates into the form's chat message box; with `target`
+  (an input id) it fills that field, cleaned up for `kind`.
+  """
+  attr :id, :string, required: true
+  attr :lang, :string, required: true
+  attr :label, :string, required: true
+  attr :target, :string, default: nil
+  attr :kind, :string, default: nil, values: [nil, "name", "number", "tel"]
+
+  def voice_button(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      phx-hook="VoiceInput"
+      phx-update="ignore"
+      data-lang={CareRoute.Intake.Phrases.speech_lang(@lang)}
+      data-target={@target}
+      data-kind={@kind}
+      data-label-start={@label}
+      data-label-stop={CareRoute.Intake.Phrases.t(:voice_stop, @lang)}
+      data-label-listening={CareRoute.Intake.Phrases.t(:voice_listening, @lang)}
+      class="hidden shrink-0"
+    >
+      <button
+        type="button"
+        aria-pressed="false"
+        aria-label={@label}
+        title={@label}
+        class="size-[38px] rounded-[10px] border border-line text-route hover:bg-[#EAF1EE] flex items-center justify-center aria-pressed:bg-[#FBEAE6] aria-pressed:border-[#F1CFC5] aria-pressed:text-[#A23F26] aria-pressed:animate-pulse"
+      >
+        <.mic_icon class="size-[18px]" />
+      </button>
+    </div>
+    """
+  end
+
   @doc "Left navigation shared by the clinician and admin pages (hidden on small screens)."
   attr :active, :atom, required: true, values: [:referrals, :network]
   attr :referrals_path, :string, default: "/clinician"

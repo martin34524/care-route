@@ -63,13 +63,7 @@ defmodule CareRouteWeb.PatientLive.Intake do
 
   # Reported by the VoiceInput hook when speech recognition fails.
   def handle_event("voice-error", %{"error" => error}, socket) do
-    key =
-      case error do
-        e when e in ["not-allowed", "service-not-allowed", "audio-capture"] -> :voice_blocked
-        "no-speech" -> :voice_no_speech
-        _ -> :voice_failed
-      end
-
+    key = Phrases.voice_error_key(error)
     {:noreply, put_flash(socket, :error, Phrases.t(key, socket.assigns.lang))}
   end
 
@@ -134,7 +128,7 @@ defmodule CareRouteWeb.PatientLive.Intake do
               id="read-aloud"
               phx-hook="ReadAloud"
               phx-update="ignore"
-              data-lang={speech_lang(@lang)}
+              data-lang={Phrases.speech_lang(@lang)}
               data-latest={latest_assistant_text(@conversation)}
               data-label-on={Phrases.t(:read_aloud_on, @lang)}
               data-label-off={Phrases.t(:read_aloud_off, @lang)}
@@ -265,27 +259,12 @@ defmodule CareRouteWeb.PatientLive.Intake do
           />
           <%!-- Set to "voice" by the VoiceInput hook; a new id per message resets it. --%>
           <input type="hidden" id={"input-mode-#{@sent}"} name="input_mode" value="text" />
-          <div
+          <.voice_button
             :if={@conversation.status == :gathering}
             id="voice-input"
-            phx-hook="VoiceInput"
-            phx-update="ignore"
-            data-lang={speech_lang(@lang)}
-            data-label-start={Phrases.t(:voice_start, @lang)}
-            data-label-stop={Phrases.t(:voice_stop, @lang)}
-            data-label-listening={Phrases.t(:voice_listening, @lang)}
-            class="hidden shrink-0"
-          >
-            <button
-              type="button"
-              aria-pressed="false"
-              aria-label={Phrases.t(:voice_start, @lang)}
-              title={Phrases.t(:voice_start, @lang)}
-              class="size-[38px] rounded-[10px] border border-line text-route hover:bg-[#EAF1EE] flex items-center justify-center aria-pressed:bg-[#FBEAE6] aria-pressed:border-[#F1CFC5] aria-pressed:text-[#A23F26] aria-pressed:animate-pulse"
-            >
-              <.mic_icon class="size-[18px]" />
-            </button>
-          </div>
+            lang={@lang}
+            label={Phrases.t(:voice_start, @lang)}
+          />
           <button
             type="submit"
             aria-label={Phrases.t(:send, @lang)}
@@ -397,22 +376,6 @@ defmodule CareRouteWeb.PatientLive.Intake do
     transcript
     |> Enum.reverse()
     |> Enum.find_value("", &(&1["role"] == "assistant" && &1["content"]))
-  end
-
-  # Speech recognition locale for the patient's language.
-  defp speech_lang("sw"), do: "sw-KE"
-  defp speech_lang(_), do: "en-KE"
-
-  attr :class, :string, default: nil
-
-  defp mic_icon(assigns) do
-    ~H"""
-    <.stroke_icon
-      class={@class}
-      d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z M5.5 11a6.5 6.5 0 0 0 13 0 M12 17.5V21 M8.5 21h7"
-      stroke_width="2"
-    />
-    """
   end
 
   defp patient_icon, do: @patient_icon
